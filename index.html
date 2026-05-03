@@ -185,13 +185,13 @@ function addPinToMap(m,lead,opts={}){
   const marker=L.marker([lead.lat,lead.lng],{icon}).addTo(m);
   marker.on('click',()=>{
     if(opts.onClick)opts.onClick(lead,marker);
-    else showPinDetail(lead,marker,m);
+    else showPinDetail(lead,marker,m._container.id);
   });
   lead._marker=marker;
   return marker;
 }
 
-function showPinDetail(lead,marker,m){
+function showPinDetail(lead,marker,mapId){
   S.selPin=lead.id;
   const existing=document.getElementById('pin-popup');
   if(existing)existing.remove();
@@ -213,8 +213,9 @@ function showPinDetail(lead,marker,m){
     renderMyList();renderMyStats();
   });
   popup.appendChild(statusRow);
-  const mapWrap=document.getElementById('my-leaflet-map')?.closest('.map-wrap');
+  const mapWrap=document.getElementById(mapId)?.closest('.map-wrap');
   if(mapWrap)mapWrap.after(popup);
+  else document.querySelector('.pane.on')?.appendChild(popup);
 }
 
 async function geocodeVisible(leads){
