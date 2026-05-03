@@ -45,7 +45,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
 .inp:focus{outline:none;border-color:#2563eb;}
 .sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
-.map-wrap{border-radius:12px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:10px;height:320px;position:relative;}
+.map-wrap{border-radius:12px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:10px;height:640px;position:relative;}
 .leaflet-map{height:100%;width:100%;}
 .map-canvas{border-radius:12px;display:block;border:1px solid #e5e5e5;margin-bottom:10px;touch-action:none;width:100%;}
 .tool-bar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;}
@@ -166,7 +166,7 @@ async function ensureLatLng(lead){
 function mkLeafletMap(containerId,leads,opts={}){
   if(maps[containerId]){maps[containerId].remove();delete maps[containerId];}
   const m=L.map(containerId,{zoomControl:true,attributionControl:false});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(m);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(m);
   maps[containerId]=m;
   const positioned=leads.filter(l=>l.lat&&l.lng);
   if(positioned.length){
@@ -175,13 +175,46 @@ function mkLeafletMap(containerId,leads,opts={}){
   } else {
     m.setView(FORT_WAYNE,12);
   }
-  positioned.forEach(lead=>{
-    const color=scColor(lead.status);
-    const icon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
-    const marker=L.marker([lead.lat,lead.lng],{icon}).addTo(m);
-    if(opts.onClick)marker.on('click',()=>opts.onClick(lead,marker));
-  });
+  positioned.forEach(lead=>addPinToMap(m,lead,opts));
   return m;
+}
+
+function addPinToMap(m,lead,opts={}){
+  const color=scColor(lead.status);
+  const icon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+  const marker=L.marker([lead.lat,lead.lng],{icon}).addTo(m);
+  marker.on('click',()=>{
+    if(opts.onClick)opts.onClick(lead,marker);
+    else showPinDetail(lead,marker,m);
+  });
+  lead._marker=marker;
+  return marker;
+}
+
+function showPinDetail(lead,marker,m){
+  S.selPin=lead.id;
+  const existing=document.getElementById('pin-popup');
+  if(existing)existing.remove();
+  const popup=document.createElement('div');
+  popup.id='pin-popup';
+  popup.className='card';
+  popup.style.cssText='position:relative;z-index:10;margin-top:8px;';
+  const s=STATUSES.find(st=>st.key===lead.status);
+  popup.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;"><div><div class="card-title">${lead.addr}</div><div class="card-sub">${lead.city||''}</div></div><span class="pill" style="background:${s.color}20;color:${s.color};flex-shrink:0;">${s.label}</span></div>`;
+  const statusRow=mkStatusBtns(lead,()=>{
+    const newColor=scColor(lead.status);
+    if(lead._marker){
+      lead._marker.setIcon(L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${newColor};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`,iconSize:[14,14],iconAnchor:[7,7]}));
+    }
+    const ns=STATUSES.find(st=>st.key===lead.status);
+    popup.querySelector('.pill').style.background=ns.color+'20';
+    popup.querySelector('.pill').style.color=ns.color;
+    popup.querySelector('.pill').textContent=ns.label;
+    renderMyList();renderMyStats();
+  });
+  popup.appendChild(statusRow);
+  const mapWrap=document.getElementById('my-leaflet-map')?.closest('.map-wrap');
+  if(mapWrap)mapWrap.after(popup);
 }
 
 async function geocodeVisible(leads){
@@ -397,17 +430,17 @@ async function renderMyMap(){
   const mapDiv=document.createElement('div');mapDiv.id='my-leaflet-map';mapDiv.className='leaflet-map';
   wrap.appendChild(mapDiv);el.appendChild(wrap);
 
-  const detail=document.createElement('div');detail.className='card';detail.id='my-pin-detail';detail.style.display='none';
-  detail.innerHTML='<div class="card-title" id="mpd-addr"></div><div class="card-sub" style="margin-bottom:4px;" id="mpd-city"></div><div id="mpd-status"></div>';
-  el.appendChild(detail);
+  if(!mine.length){
+    const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned to you yet';el.appendChild(e);
+  }
 
-  if(!mine.length){const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned to you yet';el.appendChild(e);return;}
-
-  el.innerHTML+='<div class="hint-bar" id="geocode-hint" style="display:none;">Geocoding addresses to map positions...</div>';
+  const geocodeHint=document.createElement('div');
+  geocodeHint.className='hint-bar';geocodeHint.id='geocode-hint';
+  geocodeHint.textContent='Locating addresses on map...';
+  el.appendChild(geocodeHint);
 
   setTimeout(async()=>{
-    await geocodeVisible(mine);
-    mkLeafletMap('my-leaflet-map',mine,{
+    const lmap=mkLeafletMap('my-leaflet-map',mine,{
       onClick:(lead,marker)=>{
         S.selPin=lead.id;
         detail.style.display='block';
@@ -415,9 +448,26 @@ async function renderMyMap(){
         document.getElementById('mpd-city').textContent=lead.city||'';
         const ps=document.getElementById('mpd-status');ps.innerHTML='';
         ps.appendChild(mkStatusBtns(lead,()=>{renderMyMap();renderMyList();renderMyStats();}));
-        marker._icon.querySelector('div').style.border='3px solid #2563eb';
       }
     });
+
+    const ungeocoded=mine.filter(l=>!l.lat||!l.lng);
+    if(ungeocoded.length){
+      geocodeHint.textContent=`Geocoding ${ungeocoded.length} addresses... this may take a moment.`;
+      for(const lead of ungeocoded){
+        await ensureLatLng(lead);
+        if(lead.lat&&lead.lng){
+          addPinToMap(lmap,lead);
+          const positioned=mine.filter(l=>l.lat&&l.lng);
+          if(positioned.length){lmap.fitBounds(L.latLngBounds(positioned.map(l=>[l.lat,l.lng])),{padding:[30,30],maxZoom:14});}
+        }
+        await new Promise(r=>setTimeout(r,350));
+      }
+      geocodeHint.textContent='All addresses mapped!';
+      setTimeout(()=>geocodeHint.style.display='none',2000);
+    } else {
+      geocodeHint.style.display='none';
+    }
   },100);
 }
 
