@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>YFM</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
@@ -44,6 +45,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
 .inp:focus{outline:none;border-color:#2563eb;}
 .sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
+.map-wrap{border-radius:12px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:10px;height:320px;position:relative;}
+.leaflet-map{height:100%;width:100%;}
 .map-canvas{border-radius:12px;display:block;border:1px solid #e5e5e5;margin-bottom:10px;touch-action:none;width:100%;}
 .tool-bar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;}
 .tool-btn{padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;color:#555;font-size:12px;cursor:pointer;font-weight:600;}
@@ -116,12 +119,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const SUPA_URL='https://bnuqtpqkddvqmmuyvgoy.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXF0cHFrZGR2cW1tdXl2Z295Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NzA1MjgsImV4cCI6MjA5MzM0NjUyOH0.FB1lpM6mYiJjywwhLwAO_0Fg4qnfkKU-F5pWIOG8vnM';
 const ADMIN_PW='yfmusa';
 const RATE=200;
 const CW=800,CH=420;
+const FORT_WAYNE=[41.0793,-85.1394];
+let maps={};
 
 const STATUSES=[
   {key:'new',label:'New',color:'#2563eb'},
@@ -136,6 +142,55 @@ const AV_BG=['#ede9fe','#dbeafe','#fef9c3','#dcfce7','#fce7f3','#e0f2fe'];
 const AV_TX=['#5b21b6','#1e40af','#854d0e','#166534','#9d174d','#0c4a6e'];
 
 let S={user:null,pending:null,selPin:null,polyPoints:[],polyDone:false,polySelected:[],leads:[],members:[],manualSales:{}};
+
+async function geocode(addr,city){
+  if(!addr)return null;
+  const q=encodeURIComponent(addr+', '+(city||'Fort Wayne, IN'));
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`,{headers:{'Accept-Language':'en'}});
+    const d=await r.json();
+    if(d&&d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
+  return null;
+}
+
+async function ensureLatLng(lead){
+  if(lead.lat&&lead.lng)return;
+  const pos=await geocode(lead.addr,lead.city);
+  if(pos){
+    lead.lat=pos.lat;lead.lng=pos.lng;
+    try{await dbPatch('leads',lead.id,{lat:pos.lat,lng:pos.lng});}catch(e){}
+  }
+}
+
+function mkLeafletMap(containerId,leads,opts={}){
+  if(maps[containerId]){maps[containerId].remove();delete maps[containerId];}
+  const m=L.map(containerId,{zoomControl:true,attributionControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(m);
+  maps[containerId]=m;
+  const positioned=leads.filter(l=>l.lat&&l.lng);
+  if(positioned.length){
+    const bounds=L.latLngBounds(positioned.map(l=>[l.lat,l.lng]));
+    m.fitBounds(bounds,{padding:[30,30],maxZoom:14});
+  } else {
+    m.setView(FORT_WAYNE,12);
+  }
+  positioned.forEach(lead=>{
+    const color=scColor(lead.status);
+    const icon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+    const marker=L.marker([lead.lat,lead.lng],{icon}).addTo(m);
+    if(opts.onClick)marker.on('click',()=>opts.onClick(lead,marker));
+  });
+  return m;
+}
+
+async function geocodeVisible(leads){
+  const ungeocoded=leads.filter(l=>!l.lat||!l.lng).slice(0,20);
+  for(const lead of ungeocoded){
+    await ensureLatLng(lead);
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
 
 async function api(method,table,body=null,query=''){
   const url=`${SUPA_URL}/rest/v1/${table}${query}`;
@@ -166,7 +221,7 @@ async function loadData(){
   try{
     const [members,leads]=await Promise.all([dbGet('members','?order=created_at.asc'),dbGet('leads','?order=created_at.asc')]);
     S.members=members||[];
-    S.leads=(leads||[]).map(l=>({...l,x:l.x||Math.round(Math.random()*700+50),y:l.y||Math.round(Math.random()*340+40)}));
+    S.leads=(leads||[]);
   }catch(e){console.error(e);}
 }
 
@@ -332,28 +387,38 @@ function mkLegend(){
   return legend;
 }
 
-function renderMyMap(){
+async function renderMyMap(){
   const el=document.getElementById('pane-map');if(!el)return;el.innerHTML='';
   const me=S.user.name;const mine=myLeads(me);
-  const canvas=mkCanvas('my-canvas');el.appendChild(canvas);el.appendChild(mkLegend());
+
+  el.appendChild(mkLegend());
+
+  const wrap=document.createElement('div');wrap.className='map-wrap';
+  const mapDiv=document.createElement('div');mapDiv.id='my-leaflet-map';mapDiv.className='leaflet-map';
+  wrap.appendChild(mapDiv);el.appendChild(wrap);
+
   const detail=document.createElement('div');detail.className='card';detail.id='my-pin-detail';detail.style.display='none';
   detail.innerHTML='<div class="card-title" id="mpd-addr"></div><div class="card-sub" style="margin-bottom:4px;" id="mpd-city"></div><div id="mpd-status"></div>';
   el.appendChild(detail);
-  if(!mine.length){const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned to you yet';el.appendChild(e);}
-  function redraw(){const ctx=canvas.getContext('2d');drawBaseMap(ctx,CW,CH);drawLeadPins(ctx,mine,null);}
-  redraw();
-  canvas.onclick=e=>{
-    const pos=getPos(canvas,e);
-    const hit=mine.find(l=>Math.hypot(pos.x-l.x,pos.y-l.y)<14);
-    if(hit){
-      S.selPin=hit.id;detail.style.display='block';
-      document.getElementById('mpd-addr').textContent=hit.addr;
-      document.getElementById('mpd-city').textContent=hit.city||'';
-      const ps=document.getElementById('mpd-status');ps.innerHTML='';
-      ps.appendChild(mkStatusBtns(hit,()=>{redraw();renderMyList();renderMyStats();}));
-      redraw();
-    }
-  };
+
+  if(!mine.length){const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned to you yet';el.appendChild(e);return;}
+
+  el.innerHTML+='<div class="hint-bar" id="geocode-hint" style="display:none;">Geocoding addresses to map positions...</div>';
+
+  setTimeout(async()=>{
+    await geocodeVisible(mine);
+    mkLeafletMap('my-leaflet-map',mine,{
+      onClick:(lead,marker)=>{
+        S.selPin=lead.id;
+        detail.style.display='block';
+        document.getElementById('mpd-addr').textContent=lead.addr;
+        document.getElementById('mpd-city').textContent=lead.city||'';
+        const ps=document.getElementById('mpd-status');ps.innerHTML='';
+        ps.appendChild(mkStatusBtns(lead,()=>{renderMyMap();renderMyList();renderMyStats();}));
+        marker._icon.querySelector('div').style.border='3px solid #2563eb';
+      }
+    });
+  },100);
 }
 
 function renderMyList(){
@@ -411,12 +476,14 @@ async function deleteManualSale(id,i){
   }catch(e){toast('Failed to delete');}
 }
 
-function renderAssign(){
+async function renderAssign(){
   const el=document.getElementById('pane-assign');if(!el)return;el.innerHTML='';
   resetPoly();
+
   const hint=document.createElement('div');hint.className='hint-bar';hint.id='poly-hint';
   hint.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close the shape.';
   el.appendChild(hint);
+
   const toolbar=document.createElement('div');toolbar.className='tool-bar';
   const drawBtn=document.createElement('button');drawBtn.className='tool-btn';drawBtn.id='draw-btn';drawBtn.textContent='Draw territory';
   const undoBtn=document.createElement('button');undoBtn.className='tool-btn';undoBtn.id='undo-btn';undoBtn.textContent='Undo';undoBtn.style.display='none';
@@ -424,38 +491,101 @@ function renderAssign(){
   const countEl=document.createElement('span');countEl.id='sel-count';countEl.style.cssText='font-size:12px;color:#555;margin-left:auto;font-weight:600;';
   toolbar.appendChild(drawBtn);toolbar.appendChild(undoBtn);toolbar.appendChild(clearBtn);toolbar.appendChild(countEl);
   el.appendChild(toolbar);
-  const canvas=mkCanvas('assign-canvas');el.appendChild(canvas);el.appendChild(mkLegend());
+
+  el.appendChild(mkLegend());
+
+  const wrap=document.createElement('div');wrap.className='map-wrap';
+  const mapDiv=document.createElement('div');mapDiv.id='assign-leaflet-map';mapDiv.className='leaflet-map';
+  wrap.appendChild(mapDiv);el.appendChild(wrap);
+
   const panel=document.createElement('div');panel.className='assign-panel';panel.id='assign-panel';
   const assignable=S.members.filter(m=>m.role==='rep'||m.role==='manager');
   panel.innerHTML=`<div style="font-size:13px;font-weight:700;color:#111;margin-bottom:8px;" id="panel-title">0 leads selected</div><select class="sel" id="assign-rep" style="margin-bottom:8px;">${assignable.map(r=>`<option value="${r.name}">${r.name} (${r.role})</option>`).join('')}</select><button class="btn btn-primary" style="margin-bottom:0;" onclick="doAssign()">Assign territory</button>`;
   el.appendChild(panel);
+
+  await geocodeVisible(S.leads);
+
+  const m=mkLeafletMap('assign-leaflet-map',S.leads);
   let drawing=false;
-  function redraw(){const ctx=canvas.getContext('2d');drawBaseMap(ctx,CW,CH);if(S.polyPoints.length>0)drawPoly(ctx,S.polyPoints,S.polyDone);drawLeadPins(ctx,S.leads,S.polySelected);}
+  let polyline=null;
+  let polygon=null;
+  let dotMarkers=[];
+
   function updateHint(){
     const h=document.getElementById('poly-hint');if(!h)return;
     if(!drawing){h.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close the shape.';return;}
     if(!S.polyPoints.length)h.textContent='Tap the map to place your first point.';
-    else if(S.polyPoints.length<3)h.textContent='Keep tapping to add more points and outline the territory.';
-    else h.textContent='Tap the blue dot (first point) to close the shape and select leads inside.';
+    else if(S.polyPoints.length<3)h.textContent='Keep tapping to add more points.';
+    else h.textContent='Tap the first point (blue dot) to close and select leads inside.';
   }
-  drawBtn.onclick=()=>{drawing=!drawing;S.polyPoints=[];S.polyDone=false;S.polySelected=[];drawBtn.classList.toggle('on',drawing);drawBtn.textContent=drawing?'Drawing…':'Draw territory';undoBtn.style.display=drawing?'':'none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();updateHint();};
-  undoBtn.onclick=()=>{if(S.polyPoints.length>0){S.polyPoints.pop();S.polyDone=false;S.polySelected=[];panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();updateHint();}};
-  clearBtn.onclick=()=>{drawing=false;resetPoly();drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();updateHint();};
-  canvas.addEventListener('click',e=>{
-    if(!drawing||S.polyDone)return;
-    const pos=getPos(canvas,e);
-    if(S.polyPoints.length>=3&&Math.hypot(pos.x-S.polyPoints[0].x,pos.y-S.polyPoints[0].y)<16){
-      S.polyDone=true;S.polySelected=S.leads.filter(l=>pointInPoly(l.x,l.y,S.polyPoints)).map(l=>l.id);
-      drawing=false;drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';
-      const cnt=document.getElementById('sel-count');if(cnt)cnt.textContent=S.polySelected.length+' selected';
-      const pt=document.getElementById('panel-title');if(pt)pt.textContent=S.polySelected.length+' lead'+(S.polySelected.length!==1?'s':'')+' in territory';
-      panel.classList.add('show');
-      const h=document.getElementById('poly-hint');if(h)h.textContent=S.polySelected.length+' leads selected. Choose a rep and assign.';
-      redraw();return;
+
+  function redrawPoly(){
+    if(polyline){m.removeLayer(polyline);polyline=null;}
+    if(polygon){m.removeLayer(polygon);polygon=null;}
+    dotMarkers.forEach(d=>m.removeLayer(d));dotMarkers=[];
+    if(!S.polyPoints.length)return;
+    const latlngs=S.polyPoints.map(p=>[p.lat,p.lng]);
+    if(S.polyDone){
+      polygon=L.polygon(latlngs,{color:'#2563eb',fillColor:'#2563eb',fillOpacity:0.12,weight:2}).addTo(m);
+    } else {
+      polyline=L.polyline(latlngs,{color:'#2563eb',weight:2,dashArray:'6,4'}).addTo(m);
     }
-    S.polyPoints.push(pos);redraw();updateHint();
+    S.polyPoints.forEach((p,i)=>{
+      const icon=L.divIcon({className:'',html:`<div style="width:10px;height:10px;border-radius:50%;background:${i===0?'#2563eb':'#fff'};border:2px solid #2563eb;${i===0&&S.polyPoints.length>=3&&!S.polyDone?'box-shadow:0 0 0 4px rgba(37,99,235,0.25);':''}"></div>`,iconSize:[10,10],iconAnchor:[5,5]});
+      const dot=L.marker([p.lat,p.lng],{icon,zIndexOffset:1000}).addTo(m);
+      if(i===0&&S.polyPoints.length>=3&&!S.polyDone){
+        dot.on('click',e=>{L.DomEvent.stop(e);closePoly();});
+      }
+      dotMarkers.push(dot);
+    });
+  }
+
+  function closePoly(){
+    S.polyDone=true;
+    const positioned=S.leads.filter(l=>l.lat&&l.lng);
+    S.polySelected=positioned.filter(l=>{
+      const pt=L.latLng(l.lat,l.lng);
+      return polygon&&polygon.getBounds().contains(pt)&&pointInLeafletPoly(l.lat,l.lng,S.polyPoints);
+    }).map(l=>l.id);
+    drawing=false;drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';
+    const cnt=document.getElementById('sel-count');if(cnt)cnt.textContent=S.polySelected.length+' selected';
+    const pt=document.getElementById('panel-title');if(pt)pt.textContent=S.polySelected.length+' lead'+(S.polySelected.length!==1?'s':'')+' in territory';
+    panel.classList.add('show');
+    const h=document.getElementById('poly-hint');if(h)h.textContent=S.polySelected.length+' leads selected. Choose a rep and assign.';
+    redrawPoly();
+  }
+
+  m.on('click',e=>{
+    if(!drawing||S.polyDone)return;
+    S.polyPoints.push({lat:e.latlng.lat,lng:e.latlng.lng});
+    redrawPoly();updateHint();
   });
-  redraw();updateHint();
+
+  drawBtn.onclick=()=>{
+    drawing=!drawing;S.polyPoints=[];S.polyDone=false;S.polySelected=[];
+    drawBtn.classList.toggle('on',drawing);drawBtn.textContent=drawing?'Drawing…':'Draw territory';
+    undoBtn.style.display=drawing?'':'none';panel.classList.remove('show');
+    document.getElementById('sel-count').textContent='';redrawPoly();updateHint();
+    m.dragging[drawing?'disable':'enable']();
+  };
+  undoBtn.onclick=()=>{
+    if(S.polyPoints.length>0){S.polyPoints.pop();S.polyDone=false;S.polySelected=[];panel.classList.remove('show');document.getElementById('sel-count').textContent='';redrawPoly();updateHint();}
+  };
+  clearBtn.onclick=()=>{
+    drawing=false;resetPoly();drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';
+    undoBtn.style.display='none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';
+    redrawPoly();updateHint();m.dragging.enable();
+  };
+  updateHint();
+}
+
+function pointInLeafletPoly(lat,lng,pts){
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i].lng,yi=pts[i].lat,xj=pts[j].lng,yj=pts[j].lat;
+    if(((yi>lat)!=(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
 }
 
 async function doAssign(){
@@ -557,8 +687,9 @@ async function handleCSV(e){
     for(let i=1;i<lines.length;i++){
       const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));
       if(!c[si])continue;
-      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:'new',rep:null,x:Math.round(Math.random()*700+50),y:Math.round(Math.random()*340+40)});
+      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:'new',rep:null,lat:null,lng:null});
     }
+    status.textContent=`Uploading ${batch.length} leads...`;
     let added=0;
     const CHUNK=50;
     for(let i=0;i<batch.length;i+=CHUNK){
@@ -567,10 +698,19 @@ async function handleCSV(e){
         if(rows){S.leads.push(...rows);added+=rows.length;}
       }catch(err){console.error(err);}
     }
-    status.textContent=`Loaded ${added} leads from ${file.name}`;
+    status.textContent=`${added} leads uploaded. Geocoding addresses in background...`;
     renderUpload();toast(`${added} leads uploaded!`);
+    geocodeAllInBackground();
   };
   reader.readAsText(file);
+}
+
+async function geocodeAllInBackground(){
+  const ungeocoded=S.leads.filter(l=>!l.lat||!l.lng);
+  for(const lead of ungeocoded){
+    await ensureLatLng(lead);
+    await new Promise(r=>setTimeout(r,350));
+  }
 }
 
 async function renderCommission(){
