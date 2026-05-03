@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>YFM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
+.app{width:100%;max-width:430px;background:#f5f5f5;min-height:100vh;}
+.screen{display:none;}.screen.active{display:block;}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.topbar-title{font-size:16px;font-weight:600;color:#111;}
+.topbar-sub{font-size:11px;color:#888;margin-top:1px;}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px;}
+.badge-admin{background:#ede9fe;color:#5b21b6;}
+.badge-mgr{background:#dbeafe;color:#1e40af;}
+.badge-rep{background:#dcfce7;color:#166534;}
+.logout-btn{font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;color:#555;cursor:pointer;font-weight:500;}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tab{flex-shrink:0;padding:10px 12px;font-size:12px;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500;}
+.tab.on{color:#2563eb;border-bottom-color:#2563eb;font-weight:600;}
+.pane{display:none;padding:14px;}.pane.on{display:block;}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e5e5;padding:14px;margin-bottom:10px;}
+.card-title{font-size:14px;font-weight:600;color:#111;margin-bottom:2px;}
+.card-sub{font-size:12px;color:#888;}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
+.stat{background:#fff;border-radius:10px;border:1px solid #e5e5e5;padding:12px 14px;}
+.stat-label{font-size:11px;color:#888;margin-bottom:4px;font-weight:500;}
+.stat-val{font-size:24px;font-weight:700;color:#111;}
+.pill{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;}
+.btn{display:block;width:100%;padding:11px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:center;transition:background 0.1s;}
+.btn:active{background:#f5f5f5;}
+.btn-primary{background:#2563eb;color:#fff;border-color:#2563eb;}
+.btn-primary:active{background:#1d4ed8;}
+.btn-danger{background:#fef2f2;color:#991b1b;border-color:#fecaca;}
+.btn-success{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
+.btn-sm{padding:6px 12px;font-size:12px;width:auto;display:inline-block;margin:0;}
+.srow{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.sbtn{font-size:11px;padding:5px 10px;border-radius:20px;border:1.5px solid;background:transparent;cursor:pointer;font-weight:600;}
+.sbtn.on{color:#fff!important;}
+.bar-wrap{height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;margin:8px 0;}
+.bar-fill{height:100%;border-radius:3px;background:#16a34a;}
+.inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
+.inp:focus{outline:none;border-color:#2563eb;}
+.sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
+.map-canvas{border-radius:12px;display:block;border:1px solid #e5e5e5;margin-bottom:10px;touch-action:none;width:100%;}
+.tool-bar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;}
+.tool-btn{padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;color:#555;font-size:12px;cursor:pointer;font-weight:600;}
+.tool-btn.on{background:#2563eb;color:#fff;border-color:#2563eb;}
+.assign-panel{background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;padding:12px;margin-bottom:10px;display:none;}
+.assign-panel.show{display:block;}
+.upload-area{border:2px dashed #d1d5db;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:#fff;margin-bottom:10px;}
+.upload-area:active{background:#f9fafb;}
+.pw-bg{background:rgba(0,0,0,0.5);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.pw-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:320px;}
+.login-wrap{padding:32px 20px;}
+.name-btn{padding:14px 16px;border-radius:12px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;margin-bottom:8px;transition:background 0.1s;}
+.name-btn:active{background:#f5f5f5;}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.sale-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.sale-row:last-child{border-bottom:none;}
+.add-sale-form{background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:12px;}
+.sec-title{font-size:14px;font-weight:700;color:#111;margin-bottom:10px;}
+.hint-bar{font-size:12px;color:#555;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;padding:8px 12px;margin-bottom:10px;text-align:center;line-height:1.5;}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;flex-direction:column;gap:12px;}
+.spinner{width:28px;height:28px;border:3px solid #e5e5e5;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{font-size:13px;color:#888;text-align:center;padding:24px 0;}
+.rep-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.rep-row:last-child{border-bottom:none;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="toast" class="toast"></div>
+
+<div class="screen active" id="sc-login">
+  <div class="login-wrap">
+    <div style="font-size:28px;font-weight:800;color:#111;margin-bottom:4px;">YFM</div>
+    <div style="font-size:14px;color:#888;margin-bottom:32px;">Door-to-door sales platform</div>
+    <div style="font-size:13px;color:#888;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Select your name</div>
+    <div id="name-list"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<div class="screen" id="sc-pw">
+  <div class="pw-bg">
+    <div class="pw-box">
+      <div style="font-size:18px;font-weight:700;color:#111;margin-bottom:4px;" id="pw-title">Admin login</div>
+      <div style="font-size:13px;color:#888;margin-bottom:16px;">Enter admin password to continue</div>
+      <input type="password" class="inp" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
+      <div style="font-size:13px;color:#dc2626;min-height:18px;margin-bottom:12px;" id="pw-err"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" style="margin:0;flex:1;" onclick="logout()">Cancel</button>
+        <button class="btn btn-primary" style="margin:0;flex:1;" onclick="checkPw()">Sign in</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="sc-main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">YFM<span class="badge" id="role-badge"></span></div>
+      <div class="topbar-sub" id="main-sub"></div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+  <div class="tabs" id="main-tabs"></div>
+  <div id="main-panes"></div>
+</div>
+
+</div>
+
+<script>
+const SUPA_URL='https://bnuqtpqkddvqmmuyvgoy.supabase.co';
+const SUPA_KEY='sb_publishable_HBOOU_5N_RCQEgam80iFpA_-yH9iZJf';
+const ADMIN_PW='yfmusa';
+const RATE=200;
+const CW=800,CH=420;
+
+const STATUSES=[
+  {key:'new',label:'New',color:'#2563eb'},
+  {key:'knocked',label:'Knocked',color:'#6b7280'},
+  {key:'noanswer',label:'No answer',color:'#d97706'},
+  {key:'interested',label:'Interested',color:'#16a34a'},
+  {key:'sold',label:'Sold',color:'#059669'},
+  {key:'notinterested',label:'Not interested',color:'#dc2626'},
+];
+const KNOCKED=['knocked','noanswer','interested','sold','notinterested'];
+const AV_BG=['#ede9fe','#dbeafe','#fef9c3','#dcfce7','#fce7f3','#e0f2fe'];
+const AV_TX=['#5b21b6','#1e40af','#854d0e','#166534','#9d174d','#0c4a6e'];
+
+let S={user:null,pending:null,selPin:null,polyPoints:[],polyDone:false,polySelected:[],leads:[],members:[],manualSales:{}};
+
+async function api(method,table,body=null,query=''){
+  const url=`${SUPA_URL}/rest/v1/${table}${query}`;
+  const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':method==='POST'?'return=representation':'return=representation'}};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  if(!r.ok){const t=await r.text();console.error(table,method,t);throw new Error(t);}
+  const ct=r.headers.get('content-type')||'';
+  if(ct.includes('json')&&r.status!==204)return r.json();
+  return null;
+}
+const dbGet=(table,query='')=>api('GET',table,null,query);
+const dbPost=(table,body)=>api('POST',table,body);
+const dbPatch=(table,id,body)=>api('PATCH',table,body,`?id=eq.${id}`);
+const dbDelete=(table,id)=>api('DELETE',table,null,`?id=eq.${id}`);
+
+function toast(msg,ms=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms);}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function pointInPoly(px,py,pts){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;if(((yi>py)!=(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
+function getPos(canvas,e){const r=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*(CW/r.width),y:(src.clientY-r.top)*(CH/r.height)};}
+function resetPoly(){S.polyPoints=[];S.polyDone=false;S.polySelected=[];}
+function scColor(k){return STATUSES.find(s=>s.key===k)?.color||'#888';}
+function isKnocked(s){return KNOCKED.includes(s);}
+function myLeads(n){return S.leads.filter(l=>l.rep===n);}
+function av(m){const i=S.members.findIndex(x=>x.name===m.name);return `<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div>`;}
+
+async function loadData(){
+  try{
+    const [members,leads]=await Promise.all([dbGet('members','?order=created_at.asc'),dbGet('leads','?order=created_at.asc')]);
+    S.members=members||[];
+    S.leads=(leads||[]).map(l=>({...l,x:l.x||Math.round(Math.random()*700+50),y:l.y||Math.round(Math.random()*340+40)}));
+  }catch(e){console.error(e);}
+}
+
+async function loadManualSales(rep){
+  try{
+    const rows=await dbGet('manual_sales',`?rep=eq.${encodeURIComponent(rep)}&order=created_at.desc`);
+    S.manualSales[rep]=rows||[];
+  }catch(e){console.error(e);}
+}
+
+async function login(name){
+  const m=S.members.find(x=>x.name===name);if(!m)return;
+  if(m.role==='admin'){
+    S.pending=m;
+    document.getElementById('pw-title').textContent='Admin — '+name;
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-err').textContent='';
+    showScreen('sc-pw');
+    setTimeout(()=>document.getElementById('pw-input').focus(),100);
+  } else finalizeLogin(m);
+}
+
+function checkPw(){
+  if(document.getElementById('pw-input').value===ADMIN_PW){finalizeLogin(S.pending);S.pending=null;}
+  else{document.getElementById('pw-err').textContent='Incorrect password.';document.getElementById('pw-input').value='';}
+}
+
+async function finalizeLogin(m){
+  S.user=m;S.selPin=null;resetPoly();
+  const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
+  document.getElementById('role-badge').className='badge '+bc;
+  document.getElementById('role-badge').textContent=m.role;
+  document.getElementById('main-sub').textContent='Logged in as '+m.name;
+  await loadManualSales(m.name);
+  buildTabs(m);showScreen('sc-main');
+}
+
+function logout(){S.user=null;S.pending=null;S.selPin=null;resetPoly();showScreen('sc-login');renderLogin();}
+
+function buildTabs(m){
+  const tabs=document.getElementById('main-tabs'),panes=document.getElementById('main-panes');
+  tabs.innerHTML='';panes.innerHTML='';
+  const defs=[];
+  defs.push({id:'map',label:'My map',render:renderMyMap});
+  defs.push({id:'mylist',label:'My leads',render:renderMyList});
+  defs.push({id:'mystats',label:'My stats',render:renderMyStats});
+  if(m.role==='manager'||m.role==='admin')defs.push({id:'assign',label:'Assign territory',render:renderAssign});
+  if(m.role==='admin'){
+    defs.push({id:'team',label:'Team',render:renderTeam});
+    defs.push({id:'upload',label:'Upload / Export',render:renderUpload});
+    defs.push({id:'commission',label:'Commission',render:renderCommission});
+  }
+  defs.forEach((d,i)=>{
+    const t=document.createElement('div');
+    t.className='tab'+(i===0?' on':'');t.textContent=d.label;
+    t.onclick=()=>{tabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));panes.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));t.classList.add('on');document.getElementById('pane-'+d.id).classList.add('on');d.render();};
+    tabs.appendChild(t);
+    const p=document.createElement('div');p.className='pane'+(i===0?' on':'');p.id='pane-'+d.id;panes.appendChild(p);
+  });
+  defs[0].render();
+}
+
+function renderLogin(){
+  const list=document.getElementById('name-list');
+  if(!S.members.length){list.innerHTML='<div class="loading"><div class="spinner"></div><div style="font-size:13px;color:#888;">Loading...</div></div>';return;}
+  list.innerHTML='';
+  S.members.forEach(m=>{
+    const btn=document.createElement('button');btn.className='name-btn';
+    const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
+    const i=S.members.indexOf(m);
+    btn.innerHTML=`<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div style="flex:1;text-align:left;"><div style="font-size:15px;font-weight:600;color:#111">${m.name}</div><span class="badge ${bc}" style="margin-left:0;">${m.role}${m.role==='admin'?' · password required':''}</span></div>`;
+    btn.onclick=()=>login(m.name);list.appendChild(btn);
+  });
+}
+
+function mkStatusBtns(lead,onChange){
+  const row=document.createElement('div');row.className='srow';
+  STATUSES.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='sbtn'+(lead.status===s.key?' on':'');
+    btn.textContent=s.label;btn.style.borderColor=s.color;
+    btn.style.color=lead.status===s.key?'#fff':s.color;
+    btn.style.background=lead.status===s.key?s.color:'transparent';
+    btn.onclick=async()=>{
+      const old=lead.status;lead.status=s.key;
+      onChange();
+      try{await dbPatch('leads',lead.id,{status:s.key});}
+      catch(e){lead.status=old;onChange();toast('Failed to save status');}
+    };
+    row.appendChild(btn);
+  });
+  return row;
+}
+
+function mkLeadCard(lead,opts={}){
+  const s=STATUSES.find(st=>st.key===lead.status);
+  const d=document.createElement('div');d.className='card';
+  const repLine=opts.showRep?`<div style="font-size:11px;color:#888;margin-bottom:6px;">Rep: ${lead.rep||'Unassigned'}</div>`:'';
+  const delBtn=opts.onDelete?`<button class="btn btn-sm btn-danger" onclick="deleteLead('${lead.id}',this)">Delete</button>`:'';
+  d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px;"><span class="card-title" style="flex:1;">${lead.addr}</span><span class="pill" style="background:${s.color}20;color:${s.color};flex-shrink:0;">${s.label}</span>${delBtn}</div><div class="card-sub" style="margin-bottom:4px;">${lead.city||''}</div>${repLine}`;
+  if(opts.statusBtns)d.appendChild(mkStatusBtns(lead,opts.statusBtns));
+  return d;
+}
+
+async function deleteLead(id,btn){
+  btn.textContent='...';btn.disabled=true;
+  try{
+    await dbDelete('leads',id);
+    S.leads=S.leads.filter(l=>l.id!==id);
+    const p=document.querySelector('.pane.on');
+    if(p){
+      if(p.id==='pane-mylist')renderMyList();
+      else if(p.id==='pane-upload')renderUpload();
+      else if(p.id==='pane-assign')renderAssign();
+    }
+    toast('Lead deleted');
+  }catch(e){btn.textContent='Delete';btn.disabled=false;toast('Failed to delete');}
+}
+
+function drawBaseMap(ctx,w,h){
+  ctx.fillStyle='#e8f0e4';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='#c5cfc0';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(0,h*i/4);ctx.lineTo(w,h*i/4);ctx.stroke();}
+  for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(w*i/5,0);ctx.lineTo(w*i/5,h);ctx.stroke();}
+}
+
+function drawLeadPins(ctx,leads,selectedIds){
+  leads.forEach(lead=>{
+    const sel=selectedIds&&selectedIds.includes(lead.id);
+    if(sel){ctx.beginPath();ctx.arc(lead.x,lead.y,13,0,Math.PI*2);ctx.fillStyle='rgba(37,99,235,0.15)';ctx.fill();}
+    ctx.beginPath();ctx.arc(lead.x,lead.y,sel?8:6,0,Math.PI*2);
+    ctx.fillStyle=scColor(lead.status);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=sel?3:2;ctx.stroke();
+    if(S.selPin===lead.id){ctx.beginPath();ctx.arc(lead.x,lead.y,12,0,Math.PI*2);ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.stroke();}
+  });
+}
+
+function drawPoly(ctx,pts,done){
+  if(!pts.length)return;
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  pts.forEach(p=>ctx.lineTo(p.x,p.y));
+  if(done){ctx.closePath();ctx.fillStyle='rgba(37,99,235,0.12)';ctx.fill();ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.setLineDash([]);ctx.stroke();}
+  else{ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);}
+  pts.forEach((p,i)=>{
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    ctx.fillStyle=i===0?'#2563eb':'#fff';ctx.fill();
+    ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.stroke();
+    if(i===0&&pts.length>=3&&!done){ctx.beginPath();ctx.arc(p.x,p.y,11,0,Math.PI*2);ctx.strokeStyle='rgba(37,99,235,0.4)';ctx.lineWidth=1.5;ctx.stroke();}
+  });
+}
+
+function mkCanvas(id){
+  const canvas=document.createElement('canvas');
+  canvas.id=id;canvas.width=CW;canvas.height=CH;
+  canvas.className='map-canvas';canvas.style.width='100%';
+  return canvas;
+}
+
+function mkLegend(){
+  const legend=document.createElement('div');
+  legend.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;';
+  STATUSES.forEach(s=>{legend.innerHTML+=`<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#555;font-weight:500;"><div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></div>${s.label}</div>`;});
+  return legend;
+}
+
+function renderMyMap(){
+  const el=document.getElementById('pane-map');if(!el)return;el.innerHTML='';
+  const me=S.user.name;const mine=myLeads(me);
+  const canvas=mkCanvas('my-canvas');el.appendChild(canvas);el.appendChild(mkLegend());
+  const detail=document.createElement('div');detail.className='card';detail.id='my-pin-detail';detail.style.display='none';
+  detail.innerHTML='<div class="card-title" id="mpd-addr"></div><div class="card-sub" style="margin-bottom:4px;" id="mpd-city"></div><div id="mpd-status"></div>';
+  el.appendChild(detail);
+  if(!mine.length){const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned to you yet';el.appendChild(e);}
+  function redraw(){const ctx=canvas.getContext('2d');drawBaseMap(ctx,CW,CH);drawLeadPins(ctx,mine,null);}
+  redraw();
+  canvas.onclick=e=>{
+    const pos=getPos(canvas,e);
+    const hit=mine.find(l=>Math.hypot(pos.x-l.x,pos.y-l.y)<14);
+    if(hit){
+      S.selPin=hit.id;detail.style.display='block';
+      document.getElementById('mpd-addr').textContent=hit.addr;
+      document.getElementById('mpd-city').textContent=hit.city||'';
+      const ps=document.getElementById('mpd-status');ps.innerHTML='';
+      ps.appendChild(mkStatusBtns(hit,()=>{redraw();renderMyList();renderMyStats();}));
+      redraw();
+    }
+  };
+}
+
+function renderMyList(){
+  const el=document.getElementById('pane-mylist');if(!el)return;el.innerHTML='';
+  const mine=myLeads(S.user.name);
+  if(!mine.length){el.innerHTML='<div class="empty">No leads assigned to you yet</div>';return;}
+  mine.forEach(lead=>el.appendChild(mkLeadCard(lead,{statusBtns:()=>{renderMyList();renderMyStats();renderMyMap();},onDelete:true})));
+}
+
+async function renderMyStats(){
+  const el=document.getElementById('pane-mystats');if(!el)return;el.innerHTML='';
+  const me=S.user.name;const mine=myLeads(me);
+  const sold=mine.filter(l=>l.status==='sold').length;
+  const dk=mine.filter(l=>isKnocked(l.status)).length;
+  const manSales=S.manualSales[me]||[];
+  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="stat-label">Sold</div><div class="stat-val" style="color:#059669">${sold}</div></div><div class="stat"><div class="stat-label">Doors knocked</div><div class="stat-val" style="color:#2563eb">${dk}</div></div><div class="stat"><div class="stat-label">Interested</div><div class="stat-val" style="color:#16a34a">${mine.filter(l=>l.status==='interested').length}</div></div><div class="stat"><div class="stat-label">Not yet knocked</div><div class="stat-val">${mine.filter(l=>l.status==='new').length}</div></div></div><div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:13px;color:#888;">${sold} sales × $${RATE}</span><span style="font-size:22px;font-weight:700;color:#059669;">$${(sold*RATE).toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${dk?Math.round(sold/dk*100):0}%"></div></div><div style="font-size:12px;color:#888;margin-top:4px;">${dk?Math.round(sold/dk*100):0}% close rate</div></div>`;
+  const sec=document.createElement('div');sec.innerHTML='<div class="sec-title">My logged deals</div>';
+  const form=document.createElement('div');form.className='add-sale-form';
+  form.innerHTML=`<div style="font-size:13px;color:#888;margin-bottom:10px;">Log a deal manually</div><input class="inp" id="sale-addr" placeholder="Customer address"><input class="inp" id="sale-note" placeholder="Note (optional)"><button class="btn btn-primary" style="margin-bottom:0;" onclick="addManualSale()">Add deal</button>`;
+  sec.appendChild(form);
+  if(manSales.length){
+    manSales.forEach((sale,i)=>{
+      const row=document.createElement('div');row.className='sale-row';
+      row.innerHTML=`<div><div style="font-size:14px;font-weight:600;color:#111;">${sale.addr}</div>${sale.note?`<div style="font-size:12px;color:#888;">${sale.note}</div>`:''}<div style="font-size:11px;color:#aaa;">${sale.sale_date||''}</div></div><button class="btn btn-sm btn-danger" onclick="deleteManualSale('${sale.id}',${i})">Delete</button>`;
+      sec.appendChild(row);
+    });
+    const tot=document.createElement('div');tot.style.cssText='display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #f0f0f0;margin-top:4px;';
+    tot.innerHTML=`<span style="font-size:14px;font-weight:600;color:#111;">${manSales.length} deal${manSales.length!==1?'s':''}</span><span style="font-size:18px;font-weight:700;color:#059669;">$${(manSales.length*RATE).toLocaleString()}</span>`;
+    sec.appendChild(tot);
+  } else {
+    sec.innerHTML+='<div class="empty">No deals logged yet</div>';
+  }
+  el.appendChild(sec);
+}
+
+async function addManualSale(){
+  const addr=document.getElementById('sale-addr').value.trim();if(!addr)return;
+  const note=document.getElementById('sale-note').value.trim();const me=S.user.name;
+  const dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  try{
+    const rows=await dbPost('manual_sales',{rep:me,addr,note,sale_date:dateStr});
+    if(!S.manualSales[me])S.manualSales[me]=[];
+    if(rows&&rows[0])S.manualSales[me].unshift(rows[0]);
+    document.getElementById('sale-addr').value='';document.getElementById('sale-note').value='';
+    renderMyStats();toast('Deal logged!');
+  }catch(e){toast('Failed to save deal');}
+}
+
+async function deleteManualSale(id,i){
+  try{
+    await dbDelete('manual_sales',id);
+    const me=S.user.name;
+    S.manualSales[me]=S.manualSales[me].filter(s=>s.id!==id);
+    renderMyStats();toast('Deal deleted');
+  }catch(e){toast('Failed to delete');}
+}
+
+function renderAssign(){
+  const el=document.getElementById('pane-assign');if(!el)return;el.innerHTML='';
+  resetPoly();
+  const hint=document.createElement('div');hint.className='hint-bar';hint.id='poly-hint';
+  hint.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close the shape.';
+  el.appendChild(hint);
+  const toolbar=document.createElement('div');toolbar.className='tool-bar';
+  const drawBtn=document.createElement('button');drawBtn.className='tool-btn';drawBtn.id='draw-btn';drawBtn.textContent='Draw territory';
+  const undoBtn=document.createElement('button');undoBtn.className='tool-btn';undoBtn.id='undo-btn';undoBtn.textContent='Undo';undoBtn.style.display='none';
+  const clearBtn=document.createElement('button');clearBtn.className='tool-btn';clearBtn.textContent='Clear';
+  const countEl=document.createElement('span');countEl.id='sel-count';countEl.style.cssText='font-size:12px;color:#555;margin-left:auto;font-weight:600;';
+  toolbar.appendChild(drawBtn);toolbar.appendChild(undoBtn);toolbar.appendChild(clearBtn);toolbar.appendChild(countEl);
+  el.appendChild(toolbar);
+  const canvas=mkCanvas('assign-canvas');el.appendChild(canvas);el.appendChild(mkLegend());
+  const panel=document.createElement('div');panel.className='assign-panel';panel.id='assign-panel';
+  const assignable=S.members.filter(m=>m.role==='rep'||m.role==='manager');
+  panel.innerHTML=`<div style="font-size:13px;font-weight:700;color:#111;margin-bottom:8px;" id="panel-title">0 leads selected</div><select class="sel" id="assign-rep" style="margin-bottom:8px;">${assignable.map(r=>`<option value="${r.name}">${r.name} (${r.role})</option>`).join('')}</select><button class="btn btn-primary" style="margin-bottom:0;" onclick="doAssign()">Assign territory</button>`;
+  el.appendChild(panel);
+  let drawing=false;
+  function redraw(){const ctx=canvas.getContext('2d');drawBaseMap(ctx,CW,CH);if(S.polyPoints.length>0)drawPoly(ctx,S.polyPoints,S.polyDone);drawLeadPins(ctx,S.leads,S.polySelected);}
+  function updateHint(){
+    const h=document.getElementById('poly-hint');if(!h)return;
+    if(!drawing){h.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close the shape.';return;}
+    if(!S.polyPoints.length)h.textContent='Tap the map to place your first point.';
+    else if(S.polyPoints.length<3)h.textContent='Keep tapping to add more points and outline the territory.';
+    else h.textContent='Tap the blue dot (first point) to close the shape and select leads inside.';
+  }
+  drawBtn.onclick=()=>{drawing=!drawing;S.polyPoints=[];S.polyDone=false;S.polySelected=[];drawBtn.classList.toggle('on',drawing);drawBtn.textContent=drawing?'Drawing…':'Draw territory';undoBtn.style.display=drawing?'':'none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();updateHint();};
+  undoBtn.onclick=()=>{if(S.polyPoints.length>0){S.polyPoints.pop();S.polyDone=false;S.polySelected=[];panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();updateHint();}};
+  clearBtn.onclick=()=>{drawing=false;resetPoly();drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();updateHint();};
+  canvas.addEventListener('click',e=>{
+    if(!drawing||S.polyDone)return;
+    const pos=getPos(canvas,e);
+    if(S.polyPoints.length>=3&&Math.hypot(pos.x-S.polyPoints[0].x,pos.y-S.polyPoints[0].y)<16){
+      S.polyDone=true;S.polySelected=S.leads.filter(l=>pointInPoly(l.x,l.y,S.polyPoints)).map(l=>l.id);
+      drawing=false;drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';
+      const cnt=document.getElementById('sel-count');if(cnt)cnt.textContent=S.polySelected.length+' selected';
+      const pt=document.getElementById('panel-title');if(pt)pt.textContent=S.polySelected.length+' lead'+(S.polySelected.length!==1?'s':'')+' in territory';
+      panel.classList.add('show');
+      const h=document.getElementById('poly-hint');if(h)h.textContent=S.polySelected.length+' leads selected. Choose a rep and assign.';
+      redraw();return;
+    }
+    S.polyPoints.push(pos);redraw();updateHint();
+  });
+  redraw();updateHint();
+}
+
+async function doAssign(){
+  const rep=document.getElementById('assign-rep').value;
+  const btn=document.querySelector('#assign-panel .btn-primary');
+  btn.textContent='Saving...';btn.disabled=true;
+  try{
+    await Promise.all(S.polySelected.map(id=>{const l=S.leads.find(x=>x.id===id);if(l){l.rep=rep;return dbPatch('leads',id,{rep});}return Promise.resolve();}));
+    const count=S.polySelected.length;
+    resetPoly();
+    const panel=document.getElementById('assign-panel');if(panel)panel.classList.remove('show');
+    const cnt=document.getElementById('sel-count');if(cnt)cnt.textContent='';
+    const ctx=document.getElementById('assign-canvas')?.getContext('2d');
+    if(ctx){drawBaseMap(ctx,CW,CH);drawLeadPins(ctx,S.leads,null);}
+    const h=document.getElementById('poly-hint');if(h)h.textContent=`Assigned ${count} lead${count!==1?'s':''} to ${rep}. Draw another territory or done!`;
+    toast(`${count} leads assigned to ${rep}`);
+  }catch(e){toast('Failed to assign');btn.textContent='Assign territory';btn.disabled=false;}
+}
+
+function renderTeam(){
+  const el=document.getElementById('pane-team');if(!el)return;el.innerHTML='';
+  const grid=document.createElement('div');grid.className='stat-grid';
+  grid.innerHTML=`<div class="stat"><div class="stat-label">Total leads</div><div class="stat-val" style="color:#2563eb">${S.leads.length}</div></div><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:#059669">${S.leads.filter(l=>l.status==='sold').length}</div></div><div class="stat"><div class="stat-label">Doors knocked</div><div class="stat-val">${S.leads.filter(l=>isKnocked(l.status)).length}</div></div><div class="stat"><div class="stat-label">Unassigned</div><div class="stat-val">${S.leads.filter(l=>!l.rep).length}</div></div>`;
+  el.appendChild(grid);
+  const sec=document.createElement('div');sec.innerHTML='<div class="sec-title">Rep breakdown</div>';
+  S.members.filter(m=>m.role==='rep'||m.role==='manager').forEach(m=>{
+    const mine=S.leads.filter(l=>l.rep===m.name);
+    const sold=mine.filter(l=>l.status==='sold').length;
+    const dk=mine.filter(l=>isKnocked(l.status)).length;
+    const bc=m.role==='manager'?'badge-mgr':'badge-rep';
+    const i=S.members.indexOf(m);
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div style="flex:1;"><span style="font-size:14px;font-weight:600;color:#111;">${m.name}</span> <span class="badge ${bc}" style="margin-left:0;">${m.role}</span></div><span class="pill" style="background:#dcfce7;color:#166534;">${sold} sold</span></div><div style="font-size:12px;color:#888;margin-bottom:4px;">${dk} knocked · ${mine.length} total leads</div><div class="bar-wrap"><div class="bar-fill" style="width:${mine.length?Math.round(sold/mine.length*100):0}%"></div></div>`;
+    sec.appendChild(d);
+  });
+  const addSec=document.createElement('div');addSec.innerHTML='<div class="sec-title" style="margin-top:4px;">Add team member</div>';
+  const form=document.createElement('div');form.className='add-sale-form';
+  form.innerHTML=`<input class="inp" id="new-name" placeholder="Full name"><select class="sel" id="new-role" style="margin-bottom:8px;"><option value="manager">Manager</option><option value="rep">Rep</option></select><button class="btn btn-primary" style="margin-bottom:0;" onclick="addMember()">Add member</button>`;
+  addSec.appendChild(form);
+  const membSec=document.createElement('div');membSec.innerHTML='<div class="sec-title" style="margin-top:8px;">All members</div>';
+  S.members.forEach((m,i)=>{
+    const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
+    const row=document.createElement('div');row.className='rep-row';
+    row.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div><div style="font-size:14px;font-weight:600;color:#111;">${m.name}</div><span class="badge ${bc}" style="margin-left:0;">${m.role}</span></div></div>${m.role!=='admin'?`<button class="btn btn-sm btn-danger" onclick="removeMember('${m.id}')">Remove</button>`:'<span style="font-size:11px;color:#aaa;">Protected</span>'}`;
+    membSec.appendChild(row);
+  });
+  sec.appendChild(addSec);sec.appendChild(membSec);el.appendChild(sec);
+}
+
+async function addMember(){
+  const name=document.getElementById('new-name').value.trim();const role=document.getElementById('new-role').value;
+  if(!name)return;
+  try{
+    const rows=await dbPost('members',{name,role});
+    if(rows&&rows[0])S.members.push(rows[0]);
+    document.getElementById('new-name').value='';
+    renderTeam();renderLogin();toast(name+' added!');
+  }catch(e){toast('Failed to add member');}
+}
+
+async function removeMember(id){
+  try{
+    await dbDelete('members',id);
+    S.members=S.members.filter(m=>m.id!==id);
+    renderTeam();renderLogin();toast('Member removed');
+  }catch(e){toast('Failed to remove member');}
+}
+
+function renderUpload(){
+  const el=document.getElementById('pane-upload');if(!el)return;el.innerHTML='';
+  el.innerHTML=`<div class="sec-title">Upload leads</div><div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:#555;">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:#aaa;margin-top:4px;">Street1, City, State/Region, Postal Code</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:#888;text-align:center;margin-bottom:10px;"></div>`;
+  const expBtn=document.createElement('button');expBtn.className='btn btn-success';expBtn.style.marginBottom='16px';expBtn.textContent='Export all leads as CSV';expBtn.onclick=exportCSV;
+  el.appendChild(expBtn);
+  const sec=document.createElement('div');sec.innerHTML=`<div class="sec-title">All leads (${S.leads.length})</div>`;
+  S.leads.forEach(lead=>sec.appendChild(mkLeadCard(lead,{showRep:true,onDelete:true})));
+  el.appendChild(sec);
+}
+
+function exportCSV(){
+  const rows=[['Address','City','Status','Rep']];
+  S.leads.forEach(l=>rows.push([l.addr,l.city||'',l.status,l.rep||'']));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='yfm_leads.csv';a.click();
+}
+
+async function handleCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const status=document.getElementById('csv-status');
+  status.textContent='Processing...';
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const lines=ev.target.result.split('\n').filter(Boolean);
+    const h=lines[0].split(',').map(x=>x.trim().replace(/"/g,''));
+    const si=h.findIndex(x=>x.toLowerCase().includes('street'));
+    const ci=h.findIndex(x=>x.toLowerCase().includes('city'));
+    const sti=h.findIndex(x=>x.toLowerCase().includes('state'));
+    const zi=h.findIndex(x=>x.toLowerCase().includes('postal')||x.toLowerCase().includes('zip'));
+    const batch=[];
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));
+      if(!c[si])continue;
+      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:'new',rep:null,x:Math.round(Math.random()*700+50),y:Math.round(Math.random()*340+40)});
+    }
+    let added=0;
+    const CHUNK=50;
+    for(let i=0;i<batch.length;i+=CHUNK){
+      try{
+        const rows=await dbPost('leads',batch.slice(i,i+CHUNK));
+        if(rows){S.leads.push(...rows);added+=rows.length;}
+      }catch(err){console.error(err);}
+    }
+    status.textContent=`Loaded ${added} leads from ${file.name}`;
+    renderUpload();toast(`${added} leads uploaded!`);
+  };
+  reader.readAsText(file);
+}
+
+async function renderCommission(){
+  const el=document.getElementById('pane-commission');if(!el)return;el.innerHTML='';
+  const reps=S.members.filter(m=>m.role==='rep'||m.role==='manager');
+  const totalSold=S.leads.filter(l=>l.status==='sold').length;
+  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:#059669">${totalSold}</div></div><div class="stat"><div class="stat-label">Total commissions</div><div class="stat-val" style="color:#2563eb">$${(totalSold*RATE).toLocaleString()}</div></div></div>`;
+  const maxSold=Math.max(...reps.map(r=>S.leads.filter(l=>l.rep===r.name&&l.status==='sold').length),1);
+  for(const r of reps){
+    const sold=S.leads.filter(l=>l.rep===r.name&&l.status==='sold').length;
+    let man=0;
+    try{const rows=await dbGet('manual_sales',`?rep=eq.${encodeURIComponent(r.name)}&select=id`);man=(rows||[]).length;}catch(e){}
+    const earn=(sold+man)*RATE;const pct=Math.round(sold/maxSold*100);
+    const i=S.members.indexOf(r);
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:14px;font-weight:600;color:#111;">${r.name}</span><span style="font-size:18px;font-weight:700;color:#059669;">$${earn.toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:#888;margin-top:4px;">${sold} assigned${man?` + ${man} manual`:''} · $${RATE}/sale</div>`;
+    el.appendChild(d);
+  }
+}
+
+async function init(){
+  await loadData();
+  renderLogin();
+}
+
+init();
+</script>
+</body>
+</html>
