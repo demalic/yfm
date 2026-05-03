@@ -253,9 +253,17 @@ function av(m){const i=S.members.findIndex(x=>x.name===m.name);return `<div clas
 
 async function loadData(){
   try{
-    const [members,leads]=await Promise.all([dbGet('members','?order=created_at.asc'),dbGet('leads','?order=created_at.asc')]);
+    const members=await dbGet('members','?order=created_at.asc');
     S.members=members||[];
-    S.leads=(leads||[]);
+    let allLeads=[],offset=0;
+    while(true){
+      const page=await dbGet('leads',`?order=created_at.asc&limit=1000&offset=${offset}`);
+      if(!page||!page.length)break;
+      allLeads=allLeads.concat(page);
+      if(page.length<1000)break;
+      offset+=1000;
+    }
+    S.leads=allLeads;
   }catch(e){console.error(e);}
 }
 
