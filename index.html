@@ -78,6 +78,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toggle{width:44px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}.toggle.on{background:var(--blue);}
 .toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;}.toggle.on::after{left:23px;}
 .drop-bar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:400;background:var(--bg2);border-radius:20px;padding:8px 16px;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);white-space:nowrap;}
+.bottom-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:600;display:flex;align-items:flex-end;justify-content:center;}
+.bottom-sheet{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:0 0 32px 0;box-shadow:0 -4px 24px rgba(0,0,0,0.18);animation:slideUp 0.25s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.bs-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 16px;}
+.bs-header{padding:0 20px 12px;border-bottom:1px solid var(--border2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.bs-addr{font-size:16px;font-weight:700;color:var(--text);line-height:1.3;}
+.bs-city{font-size:12px;color:var(--text3);margin-top:2px;}
+.bs-body{padding:14px 20px 0;}
+.bs-status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.bs-status-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border-radius:12px;border:2px solid transparent;cursor:pointer;background:var(--bg3);transition:all 0.15s;}
+.bs-status-btn.on{border-color:currentColor;}
+.bs-status-dot{width:20px;height:20px;border-radius:50%;}
+.bs-status-label{font-size:10px;font-weight:600;color:var(--text2);text-align:center;line-height:1.2;}
+.bs-delete{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;font-size:14px;font-weight:600;cursor:pointer;}
 .marker-cluster div{background:rgba(37,99,235,0.85)!important;color:#fff!important;font-weight:700!important;font-family:inherit!important;}
 .marker-cluster{background:rgba(37,99,235,0.2)!important;}
 ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
@@ -360,18 +374,69 @@ function pinIcon(color,size=14){
 
 function showPinDetail(lead,containerId){
   S.selPin=lead.id;
-  document.querySelectorAll('.pin-popup').forEach(p=>p.remove());
-  const popup=document.createElement('div');popup.className='card pin-popup';popup.style.cssText='position:relative;z-index:10;margin-top:8px;';
+  document.querySelectorAll('.bottom-sheet-bg').forEach(p=>p.remove());
   const s=STATUSES.find(st=>st.key===lead.status);
-  popup.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div class="card-title">${lead.addr}</div><div class="card-sub">${lead.city||''}</div></div><span class="pill" style="background:${s.color}20;color:${s.color};flex-shrink:0;">${s.label}</span></div>`;
-  popup.appendChild(mkStatusBtns(lead,()=>{
-    if(lead._marker)lead._marker.setIcon(pinIcon(scColor(lead.status)));
-    const ns=STATUSES.find(st=>st.key===lead.status);
-    popup.querySelector('.pill').style.background=ns.color+'20';popup.querySelector('.pill').style.color=ns.color;popup.querySelector('.pill').textContent=ns.label;
-    renderMyList();renderMyStats();
-  }));
-  const wrap=document.getElementById(containerId)?.closest('.map-wrap,.pane');
-  if(wrap)wrap.after(popup);else document.querySelector('.pane.on')?.appendChild(popup);
+
+  const bg=document.createElement('div');bg.className='bottom-sheet-bg';
+  bg.onclick=e=>{if(e.target===bg)bg.remove();};
+
+  const sheet=document.createElement('div');sheet.className='bottom-sheet';
+  sheet.innerHTML=`
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <div style="flex:1;">
+        <div class="bs-addr">${lead.addr}</div>
+        <div class="bs-city">${lead.city||''}</div>
+      </div>
+      <span class="pill" style="background:${s.color}20;color:${s.color};margin-top:4px;flex-shrink:0;">${s.label}</span>
+    </div>
+    <div class="bs-body">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">Update status</div>
+      <div class="bs-status-grid" id="bs-status-grid"></div>
+      <button class="bs-delete" onclick="deletePinFromSheet('${lead.id}',this)">🗑️ Delete this pin</button>
+    </div>
+  `;
+
+  // Build status grid
+  const grid=sheet.querySelector('#bs-status-grid');
+  STATUSES.forEach(st=>{
+    const btn=document.createElement('div');btn.className='bs-status-btn'+(lead.status===st.key?' on':'');
+    btn.style.color=st.color;
+    btn.innerHTML=`<div class="bs-status-dot" style="background:${st.color};${lead.status===st.key?'box-shadow:0 0 0 3px '+st.color+'44;':''}"></div><div class="bs-status-label">${st.label}</div>`;
+    btn.onclick=async()=>{
+      const old=lead.status;lead.status=st.key;
+      // Update grid UI
+      grid.querySelectorAll('.bs-status-btn').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      // Update pill
+      const pill=sheet.querySelector('.pill');
+      const ns=STATUSES.find(x=>x.key===st.key);
+      pill.style.background=ns.color+'20';pill.style.color=ns.color;pill.textContent=ns.label;
+      // Update pin color
+      if(lead._marker)lead._marker.setIcon(pinIcon(scColor(lead.status)));
+      // Save
+      try{await dbPatch('leads',lead.id,{status:st.key});renderMyList();renderMyStats();}
+      catch(e){lead.status=old;toast('Failed to save');}
+    };
+    grid.appendChild(btn);
+  });
+
+  bg.appendChild(sheet);document.body.appendChild(bg);
+}
+
+async function deletePinFromSheet(id,btn){
+  if(!confirm('Delete this lead?'))return;
+  btn.textContent='Deleting...';btn.disabled=true;
+  try{
+    await dbDelete('leads',id);
+    S.leads=S.leads.filter(l=>l.id!==id);
+    // Remove from cluster
+    Object.values(clusters).forEach(cg=>{
+      cg.getLayers().forEach(layer=>{if(layer._lead_id===id)cg.removeLayer(layer);});
+    });
+    document.querySelectorAll('.bottom-sheet-bg').forEach(p=>p.remove());
+    renderMyList();renderMyStats();toast('Lead deleted');
+  }catch(e){btn.textContent='🗑️ Delete this pin';btn.disabled=false;toast('Failed to delete');}
 }
 
 function buildClusteredMap(containerId,leads,opts={}){
@@ -385,6 +450,7 @@ function buildClusteredMap(containerId,leads,opts={}){
   clusters[containerId]=cg;
   leads.filter(l=>l.lat&&l.lng).forEach(lead=>{
     const marker=L.marker([lead.lat,lead.lng],{icon:pinIcon(scColor(lead.status))});
+    marker._lead_id=lead.id;
     marker.on('click',()=>{if(opts.onClick)opts.onClick(lead,marker);else showPinDetail(lead,containerId);});
     lead._marker=marker;cg.addLayer(marker);
   });
@@ -401,15 +467,40 @@ function enableDropPin(mapId){
   S.dropPinMode=true;m.getContainer().style.cursor='crosshair';
   const wrap=document.getElementById(mapId)?.parentElement;
   const bar=document.createElement('div');bar.className='drop-bar';bar.id='drop-bar';
-  bar.innerHTML=`📍 Tap map to drop a pin &nbsp;<span style="color:var(--red);cursor:pointer;font-weight:600;" onclick="disableDropPin('${mapId}')">Cancel</span>`;
+  bar.innerHTML=`📍 Tap a house on the map &nbsp;<span style="color:var(--red);cursor:pointer;font-weight:600;" onclick="disableDropPin('${mapId}')">Cancel</span>`;
   if(wrap){wrap.style.position='relative';wrap.appendChild(bar);}
   m.once('click',async(e)=>{
     if(!S.dropPinMode)return;disableDropPin(mapId);
     const lat=e.latlng.lat,lng=e.latlng.lng;
-    const addr=prompt('Address for this pin:','');if(!addr)return;
+    bar.textContent='Looking up address...';document.getElementById('drop-bar')?.remove();
+    // Reverse geocode to get real address
+    let addr='';let city='Fort Wayne, IN';
     try{
-      const rows=await dbPost('leads',{addr,city:'Fort Wayne, IN',status:'manual',rep:S.user.name,lat,lng,import_tag:'manual'});
-      if(rows&&rows[0]){const lead=rows[0];S.leads.push(lead);const marker=L.marker([lat,lng],{icon:pinIcon(scColor('manual'))});marker.on('click',()=>showPinDetail(lead,mapId));lead._marker=marker;if(clusters[mapId])clusters[mapId].addLayer(marker);else marker.addTo(maps[mapId]);toast('Pin dropped!');}
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`,{headers:{'Accept-Language':'en'}});
+      const d=await r.json();
+      if(d&&d.address){
+        const a=d.address;
+        const num=a.house_number||'';
+        const street=a.road||a.pedestrian||'';
+        addr=num&&street?`${num} ${street}`.toUpperCase():d.display_name?.split(',')[0]?.toUpperCase()||'';
+        city=[a.city||a.town||a.village||'',a.state_code||a.state||'',a.postcode||''].filter(Boolean).join(', ');
+      }
+    }catch(e){}
+    // Let user confirm/edit the address
+    const confirmed=prompt('Address (edit if needed):',addr||'');
+    if(!confirmed)return;
+    try{
+      const rows=await dbPost('leads',{addr:confirmed,city,status:'manual',rep:S.user.name,lat,lng,import_tag:'manual'});
+      if(rows&&rows[0]){
+        const lead=rows[0];S.leads.push(lead);
+        const marker=L.marker([lat,lng],{icon:pinIcon(scColor('manual'))});
+        marker._lead_id=lead.id;
+        marker.on('click',()=>showPinDetail(lead,mapId));
+        lead._marker=marker;
+        if(clusters[mapId])clusters[mapId].addLayer(marker);
+        else marker.addTo(maps[mapId]);
+        toast('Pin dropped!');
+      }
     }catch(e){toast('Failed to save pin');}
   });
 }
