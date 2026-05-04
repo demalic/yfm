@@ -136,12 +136,13 @@ const STATUSES=[
   {key:'interested',label:'Interested',color:'#16a34a'},
   {key:'sold',label:'Sold',color:'#059669'},
   {key:'notinterested',label:'Not interested',color:'#dc2626'},
+  {key:'existing',label:'Existing Customer',color:'#7c3aed'},
 ];
 const KNOCKED=['knocked','noanswer','interested','sold','notinterested'];
 const AV_BG=['#ede9fe','#dbeafe','#fef9c3','#dcfce7','#fce7f3','#e0f2fe'];
 const AV_TX=['#5b21b6','#1e40af','#854d0e','#166534','#9d174d','#0c4a6e'];
 
-let S={user:null,pending:null,selPin:null,polyPoints:[],polyDone:false,polySelected:[],leads:[],members:[],manualSales:{}};
+let S={user:null,pending:null,selPin:null,polyPoints:[],polyDone:false,polySelected:[],leads:[],members:[],manualSales:{},imports:[]};
 
 async function geocode(addr,city){
   if(!addr)return null;
@@ -264,6 +265,7 @@ async function loadData(){
       offset+=1000;
     }
     S.leads=allLeads;
+    try{const imp=await dbGet('imports','?order=created_at.desc');S.imports=imp||[];}catch(e){S.imports=[];}
   }catch(e){console.error(e);}
 }
 
@@ -715,12 +717,33 @@ async function removeMember(id){
 
 function renderUpload(){
   const el=document.getElementById('pane-upload');if(!el)return;el.innerHTML='';
-  el.innerHTML=`<div class="sec-title">Upload leads</div><div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:#555;">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:#aaa;margin-top:4px;">Street1, City, State/Region, Postal Code</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:#888;text-align:center;margin-bottom:10px;"></div>`;
+  el.innerHTML=`<div class="sec-title">Upload leads</div><div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:#555;">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:#aaa;margin-top:4px;">Supports street/city/state/zip + latitude/longitude</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:#888;text-align:center;margin-bottom:10px;"></div>`;
   const expBtn=document.createElement('button');expBtn.className='btn btn-success';expBtn.style.marginBottom='16px';expBtn.textContent='Export all leads as CSV';expBtn.onclick=exportCSV;
   el.appendChild(expBtn);
-  const sec=document.createElement('div');sec.innerHTML=`<div class="sec-title">All leads (${S.leads.length})</div>`;
-  S.leads.forEach(lead=>sec.appendChild(mkLeadCard(lead,{showRep:true,onDelete:true})));
-  el.appendChild(sec);
+  const impSec=document.createElement('div');
+  impSec.innerHTML=`<div class="sec-title">Imports (${S.imports.length})</div>`;
+  if(!S.imports.length){impSec.innerHTML+='<div class="empty">No imports yet</div>';}
+  else{
+    S.imports.forEach(imp=>{
+      const date=new Date(imp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      const card=document.createElement('div');card.className='card';card.style.marginBottom='10px';
+      card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:13px;font-weight:600;color:#111;">${imp.file_name}</div><div style="font-size:11px;color:#888;">${date} · ${imp.lead_count} leads</div></div><button class="btn btn-sm btn-danger" onclick="deleteImport('${imp.id}','${imp.import_tag}',this)">Delete</button></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="pill" style="background:#eff6ff;color:#2563eb;">${imp.lead_count} leads</span>${imp.existing_count?`<span class="pill" style="background:#f5f3ff;color:#7c3aed;">${imp.existing_count} existing customers</span>`:''}</div>`;
+      impSec.appendChild(card);
+    });
+  }
+  el.appendChild(impSec);
+}
+
+async function deleteImport(importId,importTag,btn){
+  if(!confirm('Delete all leads from this import? This cannot be undone.'))return;
+  btn.textContent='Deleting...';btn.disabled=true;
+  try{
+    await api('DELETE','leads',null,`?import_tag=eq.${importTag}`);
+    await dbDelete('imports',importId);
+    S.leads=S.leads.filter(l=>l.import_tag!==importTag);
+    S.imports=S.imports.filter(i=>i.id!==importId);
+    renderUpload();toast('Import deleted');
+  }catch(e){console.error(e);toast('Failed to delete import');btn.textContent='Delete';btn.disabled=false;}
 }
 
 function exportCSV(){
@@ -742,24 +765,32 @@ async function handleCSV(e){
     const ci=h.findIndex(x=>x.toLowerCase().includes('city'));
     const sti=h.findIndex(x=>x.toLowerCase().includes('state'));
     const zi=h.findIndex(x=>x.toLowerCase().includes('postal')||x.toLowerCase().includes('zip'));
-    const batch=[];
+    const lati=h.findIndex(x=>x.toLowerCase()==='latitude');
+    const lngi=h.findIndex(x=>x.toLowerCase()==='longitude');
+    const resi=h.findIndex(x=>x.toLowerCase()==='result');
+    const importTag='imp_'+Date.now();
+    const batch=[];let existingCount=0;
     for(let i=1;i<lines.length;i++){
       const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));
       if(!c[si])continue;
-      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:'new',rep:null,lat:null,lng:null});
+      const lat=lati>=0&&c[lati]?parseFloat(c[lati]):null;
+      const lng=lngi>=0&&c[lngi]?parseFloat(c[lngi]):null;
+      const result=resi>=0?(c[resi]||'').toUpperCase():'';
+      const isExisting=result.includes('EXISTING')||result.includes('INCUMBENT');
+      if(isExisting)existingCount++;
+      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':'new',rep:null,lat:lat||null,lng:lng||null,import_tag:importTag});
     }
     status.textContent=`Uploading ${batch.length} leads...`;
-    let added=0;
-    const CHUNK=50;
+    let added=0;const CHUNK=50;
     for(let i=0;i<batch.length;i+=CHUNK){
-      try{
-        const rows=await dbPost('leads',batch.slice(i,i+CHUNK));
-        if(rows){S.leads.push(...rows);added+=rows.length;}
-      }catch(err){console.error(err);}
+      try{const rows=await dbPost('leads',batch.slice(i,i+CHUNK));if(rows){S.leads.push(...rows);added+=rows.length;}}catch(err){console.error(err);}
     }
-    status.textContent=`${added} leads uploaded. Geocoding addresses in background...`;
+    try{
+      const impRows=await dbPost('imports',{file_name:file.name,lead_count:added,existing_count:existingCount,import_tag:importTag});
+      if(impRows&&impRows[0])S.imports.unshift(impRows[0]);
+    }catch(err){console.error('Import record failed:',err);}
+    status.textContent=`${added} leads uploaded${existingCount?' · '+existingCount+' existing customers auto-tagged':''}`;
     renderUpload();toast(`${added} leads uploaded!`);
-    geocodeAllInBackground();
   };
   reader.readAsText(file);
 }
