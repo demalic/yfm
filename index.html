@@ -432,7 +432,25 @@ async function renderMyMap(){
   hint.textContent=ung.length?`${ung.length} addresses without coordinates`:'';
   if(!ung.length)hint.style.display='none';
   el.appendChild(hint);
-  setTimeout(()=>buildClusteredMap('my-map',mine),100);
+  setTimeout(()=>{
+    const lmap=buildClusteredMap('my-map',mine);
+    // Location tracking
+    const locBtn=document.createElement('button');locBtn.className='tool-btn';locBtn.textContent='📍 My location';locBtn.style.marginLeft='auto';
+    let locMarker=null,locCircle=null,locWatchId=null;
+    locBtn.onclick=()=>{
+      if(locWatchId){navigator.geolocation.clearWatch(locWatchId);locWatchId=null;if(locMarker)lmap.removeLayer(locMarker);if(locCircle)lmap.removeLayer(locCircle);locMarker=null;locCircle=null;locBtn.textContent='📍 My location';locBtn.classList.remove('on');return;}
+      if(!navigator.geolocation){toast('Location not available');return;}
+      locBtn.classList.add('on');locBtn.textContent='📍 Tracking...';
+      locWatchId=navigator.geolocation.watchPosition(pos=>{
+        const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy;
+        if(locMarker)lmap.removeLayer(locMarker);if(locCircle)lmap.removeLayer(locCircle);
+        locCircle=L.circle([lat,lng],{radius:acc,color:'#2563eb',fillColor:'#2563eb',fillOpacity:0.1,weight:1}).addTo(lmap);
+        locMarker=L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb,0 2px 6px rgba(0,0,0,0.3);"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(lmap);
+        lmap.setView([lat,lng],lmap.getZoom()<14?16:lmap.getZoom());
+      },err=>{toast('Could not get location');locBtn.classList.remove('on');locBtn.textContent='📍 My location';},{enableHighAccuracy:true,maximumAge:5000});
+    };
+    document.querySelector('.tool-bar')?.appendChild(locBtn);
+  },100);
 }
 
 // My List
