@@ -256,17 +256,38 @@ async function loadData(){
   try{
     const members=await dbGet('members','?order=created_at.asc');
     S.members=members||[];
-    let allLeads=[],offset=0;
-    while(true){
-      const page=await dbGet('leads',`?order=created_at.asc&limit=1000&offset=${offset}`);
-      if(!page||!page.length)break;
-      allLeads=allLeads.concat(page);
-      if(page.length<1000)break;
-      offset+=1000;
-    }
-    S.leads=allLeads;
     try{const imp=await dbGet('imports','?order=created_at.desc');S.imports=imp||[];}catch(e){S.imports=[];}
   }catch(e){console.error(e);}
+}
+
+async function loadMyLeads(name){
+  // Load only leads assigned to this user
+  let leads=[],offset=0;
+  while(true){
+    const page=await dbGet('leads',`?rep=eq.${encodeURIComponent(name)}&order=created_at.asc&limit=1000&offset=${offset}`);
+    if(!page||!page.length)break;
+    leads=leads.concat(page);
+    if(page.length<1000)break;
+    offset+=1000;
+  }
+  // Merge into S.leads without duplicates
+  const existingIds=new Set(S.leads.map(l=>l.id));
+  S.leads=[...S.leads,...leads.filter(l=>!existingIds.has(l.id))];
+}
+
+async function loadAllLeads(){
+  // Full load for admin/manager views — only called when needed
+  if(S.allLeadsLoaded)return;
+  let all=[],offset=0;
+  while(true){
+    const page=await dbGet('leads',`?order=created_at.asc&limit=1000&offset=${offset}`);
+    if(!page||!page.length)break;
+    all=all.concat(page);
+    if(page.length<1000)break;
+    offset+=1000;
+  }
+  S.leads=all;
+  S.allLeadsLoaded=true;
 }
 
 async function loadManualSales(rep){
@@ -294,16 +315,17 @@ function checkPw(){
 }
 
 async function finalizeLogin(m){
-  S.user=m;S.selPin=null;resetPoly();
+  S.user=m;S.selPin=null;resetPoly();S.allLeadsLoaded=false;S.leads=[];
   const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
   document.getElementById('role-badge').className='badge '+bc;
   document.getElementById('role-badge').textContent=m.role;
   document.getElementById('main-sub').textContent='Logged in as '+m.name;
   await loadManualSales(m.name);
+  await loadMyLeads(m.name);
   buildTabs(m);showScreen('sc-main');
 }
 
-function logout(){S.user=null;S.pending=null;S.selPin=null;resetPoly();showScreen('sc-login');renderLogin();}
+function logout(){S.user=null;S.pending=null;S.selPin=null;S.leads=[];S.allLeadsLoaded=false;resetPoly();showScreen('sc-login');renderLogin();}
 
 function buildTabs(m){
   const tabs=document.getElementById('main-tabs'),panes=document.getElementById('main-panes');
@@ -312,11 +334,11 @@ function buildTabs(m){
   defs.push({id:'map',label:'My map',render:renderMyMap});
   defs.push({id:'mylist',label:'My leads',render:renderMyList});
   defs.push({id:'mystats',label:'My stats',render:renderMyStats});
-  if(m.role==='manager'||m.role==='admin')defs.push({id:'assign',label:'Assign territory',render:renderAssign});
+  if(m.role==='manager'||m.role==='admin')defs.push({id:'assign',label:'Assign territory',render:async()=>{await loadAllLeads();renderAssign();}});
   if(m.role==='admin'){
-    defs.push({id:'team',label:'Team',render:renderTeam});
-    defs.push({id:'upload',label:'Upload / Export',render:renderUpload});
-    defs.push({id:'commission',label:'Commission',render:renderCommission});
+    defs.push({id:'team',label:'Team',render:async()=>{await loadAllLeads();renderTeam();}});
+    defs.push({id:'upload',label:'Upload / Export',render:async()=>{await loadAllLeads();renderUpload();}});
+    defs.push({id:'commission',label:'Commission',render:async()=>{await loadAllLeads();renderCommission();}});
   }
   defs.forEach((d,i)=>{
     const t=document.createElement('div');
