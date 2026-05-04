@@ -769,6 +769,7 @@ async function handleCSV(e){
     const lngi=h.findIndex(x=>x.toLowerCase()==='longitude');
     const resi=h.findIndex(x=>x.toLowerCase()==='result');
     const importTag='imp_'+Date.now();
+    const adminNames=S.members.filter(m=>m.role==='admin').map(m=>m.name);
     const batch=[];let existingCount=0;
     for(let i=1;i<lines.length;i++){
       const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));
@@ -778,7 +779,8 @@ async function handleCSV(e){
       const result=resi>=0?(c[resi]||'').toUpperCase():'';
       const isExisting=result.includes('EXISTING')||result.includes('INCUMBENT');
       if(isExisting)existingCount++;
-      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':'new',rep:null,lat:lat||null,lng:lng||null,import_tag:importTag});
+      // Assign to uploader (admin) by default
+      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':'new',rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
     }
     status.textContent=`Uploading ${batch.length} leads...`;
     let added=0;const CHUNK=50;
