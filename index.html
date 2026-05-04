@@ -765,8 +765,8 @@ async function handleCSV(e){
     const ci=h.findIndex(x=>x.toLowerCase().includes('city'));
     const sti=h.findIndex(x=>x.toLowerCase().includes('state'));
     const zi=h.findIndex(x=>x.toLowerCase().includes('postal')||x.toLowerCase().includes('zip'));
-    const lati=h.findIndex(x=>x.toLowerCase()==='latitude');
-    const lngi=h.findIndex(x=>x.toLowerCase()==='longitude');
+    const lati=h.findIndex(x=>x.toLowerCase()==='latitude'||x.toLowerCase()==='geocodio latitude');
+    const lngi=h.findIndex(x=>x.toLowerCase()==='longitude'||x.toLowerCase()==='geocodio longitude');
     const resi=h.findIndex(x=>x.toLowerCase()==='result');
     const importTag='imp_'+Date.now();
     const adminNames=S.members.filter(m=>m.role==='admin').map(m=>m.name);
