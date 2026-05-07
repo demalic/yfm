@@ -342,7 +342,11 @@ function getPos(canvas,e){const r=canvas.getBoundingClientRect();const src=e.tou
 function resetPoly(){S.polyPoints=[];S.polyDone=false;S.polySelected=[];}
 function scColor(k){return STATUSES.find(s=>s.key===k)?.color||'#888';}
 function isKnocked(s){return KNOCKED.includes(s);}
-function myLeads(n){return S.leads.filter(l=>l.rep===n);}
+function myLeads(n){
+  const user=S.members.find(m=>m.name===n);
+  if(user&&user.role==='admin')return S.leads;
+  return S.leads.filter(l=>l.rep===n);
+}
 function av(m){const i=S.members.findIndex(x=>x.name===m.name);return `<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div>`;}
 
 async function loadData(){
