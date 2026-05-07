@@ -5,106 +5,108 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>YFM</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{--bg:#f5f5f5;--bg2:#fff;--bg3:#f9fafb;--border:#e5e5e5;--border2:#f0f0f0;--text:#111;--text2:#555;--text3:#888;--text4:#aaa;--blue:#2563eb;--green:#059669;--red:#dc2626;--purple:#7c3aed;--blue-bg:#eff6ff;--blue-border:#bfdbfe;--sidebar-w:220px;}
-[data-dark="1"]{--bg:#0f1117;--bg2:#1a1d24;--bg3:#22262f;--border:#2a2d36;--border2:#2a2d36;--text:#f0f0f0;--text2:#aaa;--text3:#777;--text4:#555;--blue-bg:#1e2a4a;--blue-border:#2d4070;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);transition:background 0.2s,color 0.2s;}
-.app-shell{display:flex;flex-direction:column;min-height:100vh;}
-@media(min-width:768px){.app-shell{flex-direction:row;}.sidebar{display:flex!important;}.mobile-topbar{display:none!important;}.mobile-tabs{display:none!important;}.pane-area{margin-left:var(--sidebar-w);}.map-wrap{height:calc(100vh - 20px)!important;border-radius:0!important;}}
-.sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:none;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:20;}
-.sidebar-logo{padding:20px 16px 10px;font-size:22px;font-weight:800;color:var(--text);}
-.sidebar-user{padding:8px 16px 14px;border-bottom:1px solid var(--border);}
-.sidebar-user-name{font-size:13px;font-weight:600;color:var(--text);}
-.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
-.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:background 0.1s;}
-.sidebar-item:hover{background:var(--bg3);}
-.sidebar-item.on{background:var(--blue-bg);color:var(--blue);font-weight:600;}
-.sidebar-item .si{font-size:15px;width:20px;text-align:center;}
-.sidebar-bottom{padding:12px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
-.mobile-topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
-.topbar-title{font-size:16px;font-weight:700;color:var(--text);}
-.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px;}
-.mobile-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.tab{flex-shrink:0;padding:9px 11px;font-size:11px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500;}
-.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
-.pane-area{flex:1;}
-.pane{display:none;padding:14px;}.pane.on{display:block;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
+.app{width:100%;max-width:430px;background:#f5f5f5;min-height:100vh;}
 .screen{display:none;}.screen.active{display:block;}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.topbar-title{font-size:16px;font-weight:600;color:#111;}
+.topbar-sub{font-size:11px;color:#888;margin-top:1px;}
 .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px;}
-.badge-admin{background:#ede9fe;color:#5b21b6;}.badge-mgr{background:#dbeafe;color:#1e40af;}.badge-rep{background:#dcfce7;color:#166534;}
-.btn{display:block;width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:center;transition:background 0.1s;}
-.btn:hover{background:var(--bg3);}.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}.btn-primary:hover{background:#1d4ed8;}.btn-danger{background:#fef2f2;color:#991b1b;border-color:#fecaca;}.btn-success{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}.btn-sm{padding:5px 11px;font-size:12px;width:auto;display:inline-block;margin:0;}
-.card{background:var(--bg2);border-radius:12px;border:1px solid var(--border);padding:14px;margin-bottom:10px;}
-.card-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}.card-sub{font-size:12px;color:var(--text3);}
+.badge-admin{background:#ede9fe;color:#5b21b6;}
+.badge-mgr{background:#dbeafe;color:#1e40af;}
+.badge-rep{background:#dcfce7;color:#166534;}
+.logout-btn{font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;color:#555;cursor:pointer;font-weight:500;}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tab{flex-shrink:0;padding:10px 12px;font-size:12px;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500;}
+.tab.on{color:#2563eb;border-bottom-color:#2563eb;font-weight:600;}
+.pane{display:none;padding:14px;}.pane.on{display:block;}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e5e5;padding:14px;margin-bottom:10px;}
+.card-title{font-size:14px;font-weight:600;color:#111;margin-bottom:2px;}
+.card-sub{font-size:12px;color:#888;}
 .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
-.stat{background:var(--bg2);border-radius:10px;border:1px solid var(--border);padding:12px 14px;}
-.stat-label{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;}.stat-val{font-size:24px;font-weight:700;color:var(--text);}
+.stat{background:#fff;border-radius:10px;border:1px solid #e5e5e5;padding:12px 14px;}
+.stat-label{font-size:11px;color:#888;margin-bottom:4px;font-weight:500;}
+.stat-val{font-size:24px;font-weight:700;color:#111;}
 .pill{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;}
+.btn{display:block;width:100%;padding:11px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:center;transition:background 0.1s;}
+.btn:active{background:#f5f5f5;}
+.btn-primary{background:#2563eb;color:#fff;border-color:#2563eb;}
+.btn-primary:active{background:#1d4ed8;}
+.btn-danger{background:#fef2f2;color:#991b1b;border-color:#fecaca;}
+.btn-success{background:#f0fdf4;color:#166534;border-color:#bbf7d0;}
+.btn-sm{padding:6px 12px;font-size:12px;width:auto;display:inline-block;margin:0;}
 .srow{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
-.sbtn{font-size:11px;padding:5px 10px;border-radius:20px;border:1.5px solid;background:transparent;cursor:pointer;font-weight:600;}.sbtn.on{color:#fff!important;}
-.bar-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0;}.bar-fill{height:100%;border-radius:3px;background:var(--green);}
-.inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;margin-bottom:8px;-webkit-appearance:none;}.inp:focus{outline:none;border-color:var(--blue);}
-.sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
-.map-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:10px;height:640px;position:relative;}
+.sbtn{font-size:11px;padding:5px 10px;border-radius:20px;border:1.5px solid;background:transparent;cursor:pointer;font-weight:600;}
+.sbtn.on{color:#fff!important;}
+.bar-wrap{height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;margin:8px 0;}
+.bar-fill{height:100%;border-radius:3px;background:#16a34a;}
+.inp{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
+.inp:focus{outline:none;border-color:#2563eb;}
+.sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e5e5;background:#fff;color:#111;font-size:14px;margin-bottom:8px;-webkit-appearance:none;}
+.map-wrap{border-radius:12px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:10px;height:640px;position:relative;}
 .leaflet-map{height:100%;width:100%;}
+.map-canvas{border-radius:12px;display:block;border:1px solid #e5e5e5;margin-bottom:10px;touch-action:none;width:100%;}
 .tool-bar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;}
-.tool-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;font-weight:600;}.tool-btn.on{background:var(--blue);color:#fff;border-color:var(--blue);}
-.assign-panel{background:var(--blue-bg);border-radius:10px;border:1px solid var(--blue-border);padding:12px;margin-bottom:10px;display:none;}.assign-panel.show{display:block;}
-.upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:var(--bg2);margin-bottom:10px;}.upload-area:hover{background:var(--bg3);}
+.tool-btn{padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;color:#555;font-size:12px;cursor:pointer;font-weight:600;}
+.tool-btn.on{background:#2563eb;color:#fff;border-color:#2563eb;}
+.assign-panel{background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;padding:12px;margin-bottom:10px;display:none;}
+.assign-panel.show{display:block;}
+.upload-area{border:2px dashed #d1d5db;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:#fff;margin-bottom:10px;}
+.upload-area:active{background:#f9fafb;}
 .pw-bg{background:rgba(0,0,0,0.5);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.pw-box{background:var(--bg2);border-radius:16px;padding:24px;width:100%;max-width:320px;}
-.login-wrap{padding:40px 20px;max-width:400px;margin:0 auto;}
-.name-btn{padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;margin-bottom:8px;}.name-btn:hover{background:var(--bg3);}
+.pw-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:320px;}
+.login-wrap{padding:32px 20px;}
+.name-btn{padding:14px 16px;border-radius:12px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;margin-bottom:8px;transition:background 0.1s;}
+.name-btn:active{background:#f5f5f5;}
 .av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
-.sale-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2);}.sale-row:last-child{border-bottom:none;}
-.add-sale-form{background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:12px;}
-.sec-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;}
-.hint-bar{font-size:12px;color:var(--text2);background:var(--blue-bg);border-radius:10px;border:1px solid var(--blue-border);padding:8px 12px;margin-bottom:10px;text-align:center;line-height:1.5;}
+.sale-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.sale-row:last-child{border-bottom:none;}
+.add-sale-form{background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:12px;}
+.sec-title{font-size:14px;font-weight:700;color:#111;margin-bottom:10px;}
+.hint-bar{font-size:12px;color:#555;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;padding:8px 12px;margin-bottom:10px;text-align:center;line-height:1.5;}
 .loading{display:flex;align-items:center;justify-content:center;padding:40px;flex-direction:column;gap:12px;}
-.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
+.spinner{width:28px;height:28px;border:3px solid #e5e5e5;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.empty{font-size:13px;color:var(--text3);text-align:center;padding:24px 0;}
-.rep-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2);}.rep-row:last-child{border-bottom:none;}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;}.toast.show{opacity:1;}
-.logout-btn{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-weight:500;}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
-.modal-box{background:var(--bg2);border-radius:16px;padding:20px;width:100%;max-width:340px;border:1px solid var(--border);}
-.modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;}
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border2);}.setting-row:last-child{border-bottom:none;}
-.setting-label{font-size:14px;color:var(--text);}.setting-sub{font-size:12px;color:var(--text3);margin-top:2px;}
-.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}.toggle.on{background:var(--blue);}
-.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;}.toggle.on::after{left:23px;}
-.drop-bar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:400;background:var(--bg2);border-radius:20px;padding:8px 16px;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);white-space:nowrap;}
-.bottom-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:600;display:flex;align-items:flex-end;justify-content:center;}
-.bottom-sheet{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:0 0 32px 0;box-shadow:0 -4px 24px rgba(0,0,0,0.18);animation:slideUp 0.25s ease;}
-@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-.bs-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 16px;}
-.bs-header{padding:0 20px 12px;border-bottom:1px solid var(--border2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
-.bs-addr{font-size:16px;font-weight:700;color:var(--text);line-height:1.3;}
-.bs-city{font-size:12px;color:var(--text3);margin-top:2px;}
-.bs-body{padding:14px 20px 0;}
-.bs-status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
-.bs-status-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border-radius:12px;border:2px solid transparent;cursor:pointer;background:var(--bg3);transition:all 0.15s;}
-.bs-status-btn.on{border-color:currentColor;}
-.bs-status-dot{width:20px;height:20px;border-radius:50%;}
-.bs-status-label{font-size:10px;font-weight:600;color:var(--text2);text-align:center;line-height:1.2;}
-.bs-delete{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;font-size:14px;font-weight:600;cursor:pointer;}
-.marker-cluster div{background:rgba(37,99,235,0.85)!important;color:#fff!important;font-weight:700!important;font-family:inherit!important;}
-.marker-cluster{background:rgba(37,99,235,0.2)!important;}
-::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.empty{font-size:13px;color:#888;text-align:center;padding:24px 0;}
+.rep-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.rep-row:last-child{border-bottom:none;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+.toast.show{opacity:1;}
+.map-ctrl-btn{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12);display:flex;align-items:center;gap:5px;}
+.map-ctrl-btn:active{background:#f5f5f5;}
+.loc-btn{position:absolute;top:48px;right:10px;z-index:1000;background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12);display:flex;align-items:center;gap:5px;}
+.loc-btn.on{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+.loc-btn:active{background:#f5f5f5;}
+.settings-nav{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
+.settings-nav-item{padding:12px 14px;border-radius:10px;border:none;background:transparent;color:#333;font-size:14px;font-weight:500;cursor:pointer;text-align:left;transition:background 0.1s;}
+.settings-nav-item:hover{background:#f5f5f5;}
+.settings-nav-item.on{background:#fef2f2;color:#dc2626;font-weight:600;}
+.settings-sub{display:none;}.settings-sub.on{display:block;}
+.status-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.status-row:last-child{border-bottom:none;}
+.status-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer;}
+.color-picker-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.1s;}
+.color-swatch.on{border-color:#111;transform:scale(1.15);}
+.icon-picker-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.icon-opt{width:32px;height:32px;border-radius:6px;border:1.5px solid #e5e5e5;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:border-color 0.1s;}
+.icon-opt.on{border-color:#2563eb;background:#eff6ff;}
+.edit-panel{background:#f9fafb;border-radius:12px;border:1px solid #e5e5e5;padding:14px;margin-top:8px;display:none;}
+.edit-panel.on{display:block;}
 </style>
 </head>
 <body>
+<div class="app">
+
 <div id="toast" class="toast"></div>
 
 <div class="screen active" id="sc-login">
   <div class="login-wrap">
-    <div style="font-size:32px;font-weight:800;color:var(--text);margin-bottom:4px;">YFM</div>
-    <div style="font-size:14px;color:var(--text3);margin-bottom:32px;">Door-to-door sales platform</div>
-    <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Select your name</div>
+    <div style="font-size:28px;font-weight:800;color:#111;margin-bottom:4px;">YFM</div>
+    <div style="font-size:14px;color:#888;margin-bottom:32px;">Door-to-door sales platform</div>
+    <div style="font-size:13px;color:#888;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Select your name</div>
     <div id="name-list"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 </div>
@@ -112,10 +114,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="screen" id="sc-pw">
   <div class="pw-bg">
     <div class="pw-box">
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;" id="pw-title">Admin login</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Enter admin password to continue</div>
+      <div style="font-size:18px;font-weight:700;color:#111;margin-bottom:4px;" id="pw-title">Admin login</div>
+      <div style="font-size:13px;color:#888;margin-bottom:16px;">Enter admin password to continue</div>
       <input type="password" class="inp" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
-      <div style="font-size:13px;color:var(--red);min-height:18px;margin-bottom:12px;" id="pw-err"></div>
+      <div style="font-size:13px;color:#dc2626;min-height:18px;margin-bottom:12px;" id="pw-err"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn" style="margin:0;flex:1;" onclick="logout()">Cancel</button>
         <button class="btn btn-primary" style="margin:0;flex:1;" onclick="checkPw()">Sign in</button>
@@ -125,213 +127,310 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <div class="screen" id="sc-main">
-  <div class="app-shell">
-    <div class="sidebar" id="sidebar">
-      <div class="sidebar-logo">YFM</div>
-      <div class="sidebar-user">
-        <div class="sidebar-user-name" id="desk-name"></div>
-        <div style="margin-top:4px;"><span class="badge" id="role-badge-d" style="margin-left:0;"></span></div>
-      </div>
-      <div class="sidebar-nav" id="sidebar-nav"></div>
-      <div class="sidebar-bottom">
-        <button class="btn" style="margin:0;" onclick="openSettings()">⚙️ Settings</button>
-        <button class="btn btn-danger" style="margin:0;" onclick="logout()">Sign out</button>
-      </div>
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">YFM<span class="badge" id="role-badge"></span></div>
+      <div class="topbar-sub" id="main-sub"></div>
     </div>
-    <div class="pane-area" id="pane-area">
-      <div class="mobile-topbar">
-        <div>
-          <div class="topbar-title">YFM<span class="badge" id="role-badge-m"></span></div>
-          <div class="topbar-sub" id="main-sub-m"></div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="logout-btn" onclick="openSettings()">⚙️</button>
-          <button class="logout-btn" onclick="logout()">Sign out</button>
-        </div>
-      </div>
-      <div class="mobile-tabs" id="main-tabs"></div>
-      <div id="main-panes"></div>
-    </div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
   </div>
+  <div class="tabs" id="main-tabs"></div>
+  <div id="main-panes"></div>
 </div>
 
-<div class="modal-bg" id="settings-modal" style="display:none;" onclick="if(event.target===this)closeSettings()">
-  <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" style="margin:0;">Settings</div>
-      <button onclick="closeSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">×</button>
-    </div>
-    <div class="setting-row">
-      <div><div class="setting-label">Dark mode</div><div class="setting-sub">Easy on the eyes at night</div></div>
-      <button class="toggle" id="dark-toggle" onclick="toggleDark()"></button>
-    </div>
-    <div class="setting-row">
-      <div><div class="setting-label">Commission per sale</div><div class="setting-sub">Used in stats and commission tab</div></div>
-      <input type="number" id="rate-input" value="200" min="0" style="width:72px;text-align:right;font-size:14px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2);color:var(--text);" oninput="S.rate=parseInt(this.value)||200;localStorage.setItem('yfm_rate',S.rate);">
-    </div>
-  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
 const SUPA_URL='https://bnuqtpqkddvqmmuyvgoy.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXF0cHFrZGR2cW1tdXl2Z295Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NzA1MjgsImV4cCI6MjA5MzM0NjUyOH0.FB1lpM6mYiJjywwhLwAO_0Fg4qnfkKU-F5pWIOG8vnM';
 const ADMIN_PW='yfmusa';
+const RATE=200;
+const CW=800,CH=420;
 const FORT_WAYNE=[41.0793,-85.1394];
-let maps={},clusters={};
+let maps={};
+let locWatchId=null;
+let locMarker=null;
 
-const STATUSES=[
-  {key:'new',label:'New',color:'#2563eb'},
-  {key:'knocked',label:'Knocked',color:'#6b7280'},
-  {key:'noanswer',label:'No answer',color:'#d97706'},
-  {key:'interested',label:'Interested',color:'#16a34a'},
-  {key:'sold',label:'Sold',color:'#059669'},
-  {key:'notinterested',label:'Not interested',color:'#dc2626'},
-  {key:'existing',label:'Existing Customer',color:'#7c3aed'},
-  {key:'manual',label:'Manual Pin',color:'#0891b2'},
-];
+const STATUS_COLORS=['#2563eb','#6b7280','#d97706','#16a34a','#059669','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d'];
+const STATUS_ICONS=['📍','🏠','⭐','✅','❌','❓','💰','📞','🔵','⚪','🚪','👋','🔥','💤','⏳'];
+
+// Load custom statuses from localStorage or use defaults
+function loadStatuses(){
+  try{
+    const saved=localStorage.getItem('yfm_statuses');
+    if(saved)return JSON.parse(saved);
+  }catch(e){}
+  return [
+    {key:'new',label:'New',color:'#2563eb',icon:'📍'},
+    {key:'knocked',label:'Knocked',color:'#6b7280',icon:'🚪'},
+    {key:'noanswer',label:'No answer',color:'#d97706',icon:'❓'},
+    {key:'interested',label:'Interested',color:'#16a34a',icon:'⭐'},
+    {key:'sold',label:'Sold',color:'#059669',icon:'💰'},
+    {key:'notinterested',label:'Not interested',color:'#dc2626',icon:'❌'},
+    {key:'existing',label:'Existing Customer',color:'#7c3aed',icon:'🏠'},
+  ];
+}
+function saveStatuses(){localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));}
+
+let STATUSES=loadStatuses();
 const KNOCKED=['knocked','noanswer','interested','sold','notinterested'];
 const AV_BG=['#ede9fe','#dbeafe','#fef9c3','#dcfce7','#fce7f3','#e0f2fe'];
 const AV_TX=['#5b21b6','#1e40af','#854d0e','#166534','#9d174d','#0c4a6e'];
 
-let S={user:null,pending:null,leads:[],members:[],manualSales:{},imports:[],allLeadsLoaded:false,rate:parseInt(localStorage.getItem('yfm_rate'))||200,polyPoints:[],polyDone:false,polySelected:[],dropPinMode:false};
+let S={user:null,pending:null,selPin:null,polyPoints:[],polyDone:false,polySelected:[],leads:[],members:[],manualSales:{},imports:[]};
 
-// Dark mode
-function applyDark(on){document.documentElement.setAttribute('data-dark',on?'1':'0');const t=document.getElementById('dark-toggle');if(t)t.classList.toggle('on',on);localStorage.setItem('yfm_dark',on?'1':'0');}
-function toggleDark(){applyDark(document.documentElement.getAttribute('data-dark')!=='1');}
-applyDark(localStorage.getItem('yfm_dark')==='1');
+async function geocode(addr,city){
+  if(!addr)return null;
+  const q=encodeURIComponent(addr+', '+(city||'Fort Wayne, IN'));
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`,{headers:{'Accept-Language':'en'}});
+    const d=await r.json();
+    if(d&&d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
+  return null;
+}
 
-function openSettings(){document.getElementById('settings-modal').style.display='flex';document.getElementById('rate-input').value=S.rate;const t=document.getElementById('dark-toggle');if(t)t.classList.toggle('on',document.documentElement.getAttribute('data-dark')==='1');}
-function closeSettings(){document.getElementById('settings-modal').style.display='none';}
+async function ensureLatLng(lead){
+  if(lead.lat&&lead.lng)return;
+  const pos=await geocode(lead.addr,lead.city);
+  if(pos){
+    lead.lat=pos.lat;lead.lng=pos.lng;
+    try{await dbPatch('leads',lead.id,{lat:pos.lat,lng:pos.lng});}catch(e){}
+  }
+}
 
-function isDesktop(){return window.innerWidth>=768;}
+function mkLeafletMap(containerId,leads,opts={}){
+  if(maps[containerId]){maps[containerId].remove();delete maps[containerId];}
+  const m=L.map(containerId,{zoomControl:true,attributionControl:false});
+  const normalLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'});
+  const satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+  normalLayer.addTo(m);
+  maps[containerId]=m;
+  let isSatellite=false;
 
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+  setTimeout(()=>{
+    const wrap=document.getElementById(containerId)?.closest('.map-wrap');
+    if(!wrap)return;
+    // Satellite toggle
+    const satBtn=document.createElement('button');
+    satBtn.className='map-ctrl-btn';satBtn.innerHTML='🛰 Satellite';
+    satBtn.onclick=()=>{
+      if(isSatellite){m.removeLayer(satelliteLayer);normalLayer.addTo(m);satBtn.innerHTML='🛰 Satellite';isSatellite=false;}
+      else{m.removeLayer(normalLayer);satelliteLayer.addTo(m);satBtn.innerHTML='🗺 Map';isSatellite=true;}
+    };
+    wrap.appendChild(satBtn);
+    // Location tracker
+    const locBtn=document.createElement('button');
+    locBtn.className='loc-btn';locBtn.innerHTML='📍 My Location';
+    let myLocMarker=null;let myWatchId=null;
+    locBtn.onclick=()=>{
+      if(myWatchId!==null){
+        navigator.geolocation.clearWatch(myWatchId);myWatchId=null;
+        if(myLocMarker){m.removeLayer(myLocMarker);myLocMarker=null;}
+        locBtn.classList.remove('on');locBtn.innerHTML='📍 My Location';
+      } else {
+        if(!navigator.geolocation){toast('Geolocation not supported');return;}
+        locBtn.classList.add('on');locBtn.innerHTML='📍 Tracking...';
+        let firstFix=true;
+        myWatchId=navigator.geolocation.watchPosition(pos=>{
+          const lat=pos.coords.latitude,lng=pos.coords.longitude;
+          if(myLocMarker){myLocMarker.setLatLng([lat,lng]);}
+          else{
+            const icon=L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 4px rgba(37,99,235,0.3);"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+            myLocMarker=L.marker([lat,lng],{icon,zIndexOffset:2000}).addTo(m);
+          }
+          if(firstFix){m.setView([lat,lng],15);firstFix=false;}
+        },()=>{
+          toast('Location unavailable');
+          locBtn.classList.remove('on');locBtn.innerHTML='📍 My Location';
+          if(myWatchId!==null){navigator.geolocation.clearWatch(myWatchId);myWatchId=null;}
+        },{enableHighAccuracy:true,maximumAge:5000});
+      }
+    };
+    wrap.appendChild(locBtn);
+  },50);
 
-// Supabase
+  const positioned=leads.filter(l=>l.lat&&l.lng);
+  if(positioned.length){
+    const bounds=L.latLngBounds(positioned.map(l=>[l.lat,l.lng]));
+    m.fitBounds(bounds,{padding:[30,30],maxZoom:14});
+  } else {
+    m.setView(FORT_WAYNE,12);
+  }
+  positioned.forEach(lead=>addPinToMap(m,lead,opts));
+  return m;
+}
+
+function addPinToMap(m,lead,opts={}){
+  const color=scColor(lead.status);
+  const statusObj=STATUSES.find(s=>s.key===lead.status);
+  const ico=statusObj?.icon||'';
+  const html=ico
+    ? `<div style="width:22px;height:22px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;">${ico}</div>`
+    : `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
+  const sz=ico?[22,22]:[14,14];const anchor=ico?[11,11]:[7,7];
+  const icon=L.divIcon({className:'',html,iconSize:sz,iconAnchor:anchor});
+  const marker=L.marker([lead.lat,lead.lng],{icon}).addTo(m);
+  marker.on('click',()=>{
+    if(opts.onClick)opts.onClick(lead,marker);
+    else showPinDetail(lead,marker,m._container.id);
+  });
+  lead._marker=marker;
+  return marker;
+}
+
+function showPinDetail(lead,marker,mapId){
+  S.selPin=lead.id;
+  const existing=document.getElementById('pin-popup');
+  if(existing)existing.remove();
+  const popup=document.createElement('div');
+  popup.id='pin-popup';
+  popup.className='card';
+  popup.style.cssText='position:relative;z-index:10;margin-top:8px;';
+  const s=STATUSES.find(st=>st.key===lead.status);
+  popup.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;"><div><div class="card-title">${lead.addr}</div><div class="card-sub">${lead.city||''}</div></div><span class="pill" style="background:${s.color}20;color:${s.color};flex-shrink:0;">${s.label}</span></div>`;
+  const statusRow=mkStatusBtns(lead,()=>{
+    const newColor=scColor(lead.status);
+    const ns=STATUSES.find(st=>st.key===lead.status);
+    if(lead._marker){
+      const ico=ns?.icon||'';
+      const html=ico
+        ?`<div style="width:22px;height:22px;border-radius:50%;background:${newColor};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;">${ico}</div>`
+        :`<div style="width:14px;height:14px;border-radius:50%;background:${newColor};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
+      const sz=ico?[22,22]:[14,14];const anchor=ico?[11,11]:[7,7];
+      lead._marker.setIcon(L.divIcon({className:'',html,iconSize:sz,iconAnchor:anchor}));
+    }
+    popup.querySelector('.pill').style.background=ns.color+'20';
+    popup.querySelector('.pill').style.color=ns.color;
+    popup.querySelector('.pill').textContent=ns.label;
+    renderMyList();renderMyStats();
+  });
+  popup.appendChild(statusRow);
+  const mapWrap=document.getElementById(mapId)?.closest('.map-wrap');
+  if(mapWrap)mapWrap.after(popup);
+  else document.querySelector('.pane.on')?.appendChild(popup);
+}
+
+async function geocodeVisible(leads){
+  const ungeocoded=leads.filter(l=>!l.lat||!l.lng).slice(0,20);
+  for(const lead of ungeocoded){
+    await ensureLatLng(lead);
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+
 async function api(method,table,body=null,query=''){
   const url=`${SUPA_URL}/rest/v1/${table}${query}`;
-  const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'}};
+  const opts={method,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':method==='POST'?'return=representation':'return=representation'}};
   if(body)opts.body=JSON.stringify(body);
   const r=await fetch(url,opts);
-  if(!r.ok){const t=await r.text();throw new Error(t);}
+  if(!r.ok){const t=await r.text();console.error(table,method,t);throw new Error(t);}
   const ct=r.headers.get('content-type')||'';
   if(ct.includes('json')&&r.status!==204)return r.json();
   return null;
 }
-const dbGet=(t,q='')=>api('GET',t,null,q);
-const dbPost=(t,b)=>api('POST',t,b);
-const dbPatch=(t,id,b)=>api('PATCH',t,b,`?id=eq.${id}`);
-const dbDelete=(t,id)=>api('DELETE',t,null,`?id=eq.${id}`);
+const dbGet=(table,query='')=>api('GET',table,null,query);
+const dbPost=(table,body)=>api('POST',table,body);
+const dbPatch=(table,id,body)=>api('PATCH',table,body,`?id=eq.${id}`);
+const dbDelete=(table,id)=>api('DELETE',table,null,`?id=eq.${id}`);
 
 function toast(msg,ms=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms);}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function pointInPoly(px,py,pts){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;if(((yi>py)!=(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
+function getPos(canvas,e){const r=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*(CW/r.width),y:(src.clientY-r.top)*(CH/r.height)};}
 function resetPoly(){S.polyPoints=[];S.polyDone=false;S.polySelected=[];}
 function scColor(k){return STATUSES.find(s=>s.key===k)?.color||'#888';}
 function isKnocked(s){return KNOCKED.includes(s);}
 function myLeads(n){return S.leads.filter(l=>l.rep===n);}
 function av(m){const i=S.members.findIndex(x=>x.name===m.name);return `<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div>`;}
-function pointInLeafletPoly(lat,lng,pts){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].lng,yi=pts[i].lat,xj=pts[j].lng,yj=pts[j].lat;if(((yi>lat)!=(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
 
-// Data
 async function loadData(){
-  try{const members=await dbGet('members','?order=created_at.asc');S.members=members||[];try{const imp=await dbGet('imports','?order=created_at.desc');S.imports=imp||[];}catch(e){S.imports=[];}}
-  catch(e){console.error(e);}
+  try{
+    const members=await dbGet('members','?order=created_at.asc');
+    S.members=members||[];
+    let allLeads=[],offset=0;
+    while(true){
+      const page=await dbGet('leads',`?order=created_at.asc&limit=1000&offset=${offset}`);
+      if(!page||!page.length)break;
+      allLeads=allLeads.concat(page);
+      if(page.length<1000)break;
+      offset+=1000;
+    }
+    S.leads=allLeads;
+    try{const imp=await dbGet('imports','?order=created_at.desc');S.imports=imp||[];}catch(e){S.imports=[];}
+  }catch(e){console.error(e);}
 }
-async function loadMyLeads(name){
-  let leads=[],offset=0;
-  while(true){const page=await dbGet('leads',`?rep=eq.${encodeURIComponent(name)}&order=created_at.asc&limit=1000&offset=${offset}`);if(!page||!page.length)break;leads=leads.concat(page);if(page.length<1000)break;offset+=1000;}
-  const ids=new Set(S.leads.map(l=>l.id));S.leads=[...S.leads,...leads.filter(l=>!ids.has(l.id))];
-}
-async function loadAllLeads(){
-  if(S.allLeadsLoaded)return;
-  let all=[],offset=0;
-  while(true){const page=await dbGet('leads',`?order=created_at.asc&limit=1000&offset=${offset}`);if(!page||!page.length)break;all=all.concat(page);if(page.length<1000)break;offset+=1000;}
-  S.leads=all;S.allLeadsLoaded=true;
-}
-async function loadManualSales(rep){try{const rows=await dbGet('manual_sales',`?rep=eq.${encodeURIComponent(rep)}&order=created_at.desc`);S.manualSales[rep]=rows||[];}catch(e){}}
 
-// Auth
+async function loadManualSales(rep){
+  try{
+    const rows=await dbGet('manual_sales',`?rep=eq.${encodeURIComponent(rep)}&order=created_at.desc`);
+    S.manualSales[rep]=rows||[];
+  }catch(e){console.error(e);}
+}
+
 async function login(name){
   const m=S.members.find(x=>x.name===name);if(!m)return;
-  if(m.role==='admin'){S.pending=m;document.getElementById('pw-title').textContent='Admin — '+name;document.getElementById('pw-input').value='';document.getElementById('pw-err').textContent='';showScreen('sc-pw');setTimeout(()=>document.getElementById('pw-input').focus(),100);}
-  else finalizeLogin(m);
+  if(m.role==='admin'){
+    S.pending=m;
+    document.getElementById('pw-title').textContent='Admin — '+name;
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-err').textContent='';
+    showScreen('sc-pw');
+    setTimeout(()=>document.getElementById('pw-input').focus(),100);
+  } else finalizeLogin(m);
 }
-function checkPw(){if(document.getElementById('pw-input').value===ADMIN_PW){finalizeLogin(S.pending);S.pending=null;}else{document.getElementById('pw-err').textContent='Incorrect password.';document.getElementById('pw-input').value='';}}
+
+function checkPw(){
+  if(document.getElementById('pw-input').value===ADMIN_PW){finalizeLogin(S.pending);S.pending=null;}
+  else{document.getElementById('pw-err').textContent='Incorrect password.';document.getElementById('pw-input').value='';}
+}
+
 async function finalizeLogin(m){
-  S.user=m;resetPoly();S.allLeadsLoaded=false;S.leads=[];
+  S.user=m;S.selPin=null;resetPoly();
   const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
-  await loadManualSales(m.name);await loadMyLeads(m.name);
-  // Set user info in both bars
-  ['role-badge-m','role-badge-d'].forEach(id=>{const el=document.getElementById(id);if(el){el.className='badge '+bc;el.textContent=m.role;}});
-  document.getElementById('main-sub-m').textContent='Logged in as '+m.name;
-  document.getElementById('desk-name').textContent=m.name;
-  buildNav(m);showScreen('sc-main');
-}
-function logout(){
-  S.user=null;S.pending=null;S.leads=[];S.allLeadsLoaded=false;resetPoly();
-  Object.values(maps).forEach(m=>{try{m.remove();}catch(e){}});maps={};clusters={};
-  showScreen('sc-login');renderLogin();
+  document.getElementById('role-badge').className='badge '+bc;
+  document.getElementById('role-badge').textContent=m.role;
+  document.getElementById('main-sub').textContent='Logged in as '+m.name;
+  await loadManualSales(m.name);
+  buildTabs(m);showScreen('sc-main');
 }
 
-// Nav
-function getNavDefs(m){
-  const d=[
-    {id:'map',label:'My map',icon:'🗺️',render:renderMyMap},
-    {id:'mylist',label:'My leads',icon:'📋',render:renderMyList},
-    {id:'mystats',label:'My stats',icon:'📊',render:renderMyStats},
-  ];
-  if(m.role==='manager'||m.role==='admin')d.push({id:'assign',label:'Assign territory',icon:'✏️',render:async()=>{await loadAllLeads();renderAssign();}});
-  if(m.role==='admin'){d.push({id:'team',label:'Team',icon:'👥',render:async()=>{await loadAllLeads();renderTeam();}});d.push({id:'upload',label:'Upload / Export',icon:'📂',render:async()=>{await loadAllLeads();renderUpload();}});d.push({id:'commission',label:'Commission',icon:'💰',render:async()=>{await loadAllLeads();renderCommission();}});}
-  return d;
-}
+function logout(){S.user=null;S.pending=null;S.selPin=null;resetPoly();showScreen('sc-login');renderLogin();}
 
-function buildNav(m){
-  const nav=document.getElementById('sidebar-nav');
-  const tabs=document.getElementById('main-tabs');
-  const panes=document.getElementById('main-panes');
-  nav.innerHTML='';tabs.innerHTML='';panes.innerHTML='';
-  const defs=getNavDefs(m);
+function buildTabs(m){
+  const tabs=document.getElementById('main-tabs'),panes=document.getElementById('main-panes');
+  tabs.innerHTML='';panes.innerHTML='';
+  const defs=[];
+  defs.push({id:'map',label:'My map',render:renderMyMap});
+  defs.push({id:'mylist',label:'My leads',render:renderMyList});
+  defs.push({id:'mystats',label:'My stats',render:renderMyStats});
+  if(m.role==='manager'||m.role==='admin')defs.push({id:'assign',label:'Assign territory',render:renderAssign});
+  if(m.role==='admin'){
+    defs.push({id:'team',label:'Team',render:renderTeam});
+    defs.push({id:'upload',label:'Upload / Export',render:renderUpload});
+    defs.push({id:'commission',label:'Commission',render:renderCommission});
+    defs.push({id:'settings',label:'⚙️ Settings',render:renderSettings});
+  }
   defs.forEach((d,i)=>{
-    // Sidebar item
-    const si=document.createElement('div');si.className='sidebar-item'+(i===0?' on':'');
-    si.innerHTML=`<span class="si">${d.icon}</span><span>${d.label}</span>`;
-    si.onclick=()=>switchTab(d.id,si,'sidebar-item');
-    nav.appendChild(si);
-    // Mobile tab
-    const tab=document.createElement('div');tab.className='tab'+(i===0?' on':'');tab.textContent=d.label;
-    tab.onclick=()=>switchTab(d.id,tab,'tab');
-    tabs.appendChild(tab);
-    // Pane
+    const t=document.createElement('div');
+    t.className='tab'+(i===0?' on':'');t.textContent=d.label;
+    t.onclick=()=>{tabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));panes.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));t.classList.add('on');document.getElementById('pane-'+d.id).classList.add('on');d.render();};
+    tabs.appendChild(t);
     const p=document.createElement('div');p.className='pane'+(i===0?' on':'');p.id='pane-'+d.id;panes.appendChild(p);
-    if(i===0)d.render();
-    // Store render fn
-    si._render=d.render;tab._render=d.render;
   });
-}
-
-let _lastRender={};
-function switchTab(id,el,cls){
-  document.querySelectorAll('.'+cls).forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
-  // Also sync sidebar and mobile tabs
-  const defs=getNavDefs(S.user);const d=defs.find(x=>x.id===id);
-  document.querySelectorAll('.sidebar-item').forEach((x,i)=>{x.classList.toggle('on',defs[i]?.id===id);});
-  document.querySelectorAll('.tab').forEach((x,i)=>{x.classList.toggle('on',defs[i]?.id===id);});
-  el.classList.add('on');
-  document.getElementById('pane-'+id).classList.add('on');
-  if(d)d.render();
+  defs[0].render();
 }
 
 function renderLogin(){
   const list=document.getElementById('name-list');
-  if(!S.members.length){list.innerHTML='<div class="loading"><div class="spinner"></div></div>';return;}
+  if(!S.members.length){list.innerHTML='<div class="loading"><div class="spinner"></div><div style="font-size:13px;color:#888;">Loading...</div></div>';return;}
   list.innerHTML='';
   S.members.forEach(m=>{
     const btn=document.createElement('button');btn.className='name-btn';
     const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
     const i=S.members.indexOf(m);
-    btn.innerHTML=`<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div style="flex:1;text-align:left;"><div style="font-size:15px;font-weight:600;color:var(--text)">${m.name}</div><span class="badge ${bc}" style="margin-left:0;">${m.role}${m.role==='admin'?' · password required':''}</span></div>`;
+    btn.innerHTML=`<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div style="flex:1;text-align:left;"><div style="font-size:15px;font-weight:600;color:#111">${m.name}</div><span class="badge ${bc}" style="margin-left:0;">${m.role}${m.role==='admin'?' · password required':''}</span></div>`;
     btn.onclick=()=>login(m.name);list.appendChild(btn);
   });
 }
@@ -344,7 +443,12 @@ function mkStatusBtns(lead,onChange){
     btn.textContent=s.label;btn.style.borderColor=s.color;
     btn.style.color=lead.status===s.key?'#fff':s.color;
     btn.style.background=lead.status===s.key?s.color:'transparent';
-    btn.onclick=async()=>{const old=lead.status;lead.status=s.key;onChange();try{await dbPatch('leads',lead.id,{status:s.key});}catch(e){lead.status=old;onChange();toast('Failed to save');}};
+    btn.onclick=async()=>{
+      const old=lead.status;lead.status=s.key;
+      onChange();
+      try{await dbPatch('leads',lead.id,{status:s.key});}
+      catch(e){lead.status=old;onChange();toast('Failed to save status');}
+    };
     row.appendChild(btn);
   });
   return row;
@@ -353,223 +457,155 @@ function mkStatusBtns(lead,onChange){
 function mkLeadCard(lead,opts={}){
   const s=STATUSES.find(st=>st.key===lead.status);
   const d=document.createElement('div');d.className='card';
-  const repLine=opts.showRep?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Rep: ${lead.rep||'Unassigned'}</div>`:'';
+  const repLine=opts.showRep?`<div style="font-size:11px;color:#888;margin-bottom:6px;">Rep: ${lead.rep||'Unassigned'}</div>`:'';
   const delBtn=opts.onDelete?`<button class="btn btn-sm btn-danger" onclick="deleteLead('${lead.id}',this)">Delete</button>`:'';
   d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px;"><span class="card-title" style="flex:1;">${lead.addr}</span><span class="pill" style="background:${s.color}20;color:${s.color};flex-shrink:0;">${s.label}</span>${delBtn}</div><div class="card-sub" style="margin-bottom:4px;">${lead.city||''}</div>${repLine}`;
   if(opts.statusBtns)d.appendChild(mkStatusBtns(lead,opts.statusBtns));
   return d;
 }
 
-async function deleteLead(id,btn){btn.textContent='...';btn.disabled=true;try{await dbDelete('leads',id);S.leads=S.leads.filter(l=>l.id!==id);renderMyList();toast('Lead deleted');}catch(e){btn.textContent='Delete';btn.disabled=false;toast('Failed');}}
-
-function mkLegend(){
-  const l=document.createElement('div');l.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
-  STATUSES.forEach(s=>{l.innerHTML+=`<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);font-weight:500;"><div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></div>${s.label}</div>`;});
-  return l;
-}
-
-function pinIcon(color,size=14){
-  return L.divIcon({className:'',html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`,iconSize:[size,size],iconAnchor:[size/2,size/2]});
-}
-
-function showPinDetail(lead,containerId){
-  S.selPin=lead.id;
-  document.querySelectorAll('.bottom-sheet-bg').forEach(p=>p.remove());
-  const s=STATUSES.find(st=>st.key===lead.status);
-
-  const bg=document.createElement('div');bg.className='bottom-sheet-bg';
-  bg.onclick=e=>{if(e.target===bg)bg.remove();};
-
-  const sheet=document.createElement('div');sheet.className='bottom-sheet';
-  sheet.innerHTML=`
-    <div class="bs-handle"></div>
-    <div class="bs-header">
-      <div style="flex:1;">
-        <div class="bs-addr">${lead.addr}</div>
-        <div class="bs-city">${lead.city||''}</div>
-      </div>
-      <span class="pill" style="background:${s.color}20;color:${s.color};margin-top:4px;flex-shrink:0;">${s.label}</span>
-    </div>
-    <div class="bs-body">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">Update status</div>
-      <div class="bs-status-grid" id="bs-status-grid"></div>
-      <button class="bs-delete" onclick="deletePinFromSheet('${lead.id}',this)">🗑️ Delete this pin</button>
-    </div>
-  `;
-
-  // Build status grid
-  const grid=sheet.querySelector('#bs-status-grid');
-  STATUSES.forEach(st=>{
-    const btn=document.createElement('div');btn.className='bs-status-btn'+(lead.status===st.key?' on':'');
-    btn.style.color=st.color;
-    btn.innerHTML=`<div class="bs-status-dot" style="background:${st.color};${lead.status===st.key?'box-shadow:0 0 0 3px '+st.color+'44;':''}"></div><div class="bs-status-label">${st.label}</div>`;
-    btn.onclick=async()=>{
-      const old=lead.status;lead.status=st.key;
-      // Update grid UI
-      grid.querySelectorAll('.bs-status-btn').forEach(b=>b.classList.remove('on'));
-      btn.classList.add('on');
-      // Update pill
-      const pill=sheet.querySelector('.pill');
-      const ns=STATUSES.find(x=>x.key===st.key);
-      pill.style.background=ns.color+'20';pill.style.color=ns.color;pill.textContent=ns.label;
-      // Update pin color
-      if(lead._marker)lead._marker.setIcon(pinIcon(scColor(lead.status)));
-      // Save
-      try{await dbPatch('leads',lead.id,{status:st.key});renderMyList();renderMyStats();}
-      catch(e){lead.status=old;toast('Failed to save');}
-    };
-    grid.appendChild(btn);
-  });
-
-  bg.appendChild(sheet);document.body.appendChild(bg);
-}
-
-async function deletePinFromSheet(id,btn){
-  if(!confirm('Delete this lead?'))return;
-  btn.textContent='Deleting...';btn.disabled=true;
+async function deleteLead(id,btn){
+  btn.textContent='...';btn.disabled=true;
   try{
     await dbDelete('leads',id);
     S.leads=S.leads.filter(l=>l.id!==id);
-    // Remove from cluster
-    Object.values(clusters).forEach(cg=>{
-      cg.getLayers().forEach(layer=>{if(layer._lead_id===id)cg.removeLayer(layer);});
-    });
-    document.querySelectorAll('.bottom-sheet-bg').forEach(p=>p.remove());
-    renderMyList();renderMyStats();toast('Lead deleted');
-  }catch(e){btn.textContent='🗑️ Delete this pin';btn.disabled=false;toast('Failed to delete');}
+    const p=document.querySelector('.pane.on');
+    if(p){
+      if(p.id==='pane-mylist')renderMyList();
+      else if(p.id==='pane-upload')renderUpload();
+      else if(p.id==='pane-assign')renderAssign();
+    }
+    toast('Lead deleted');
+  }catch(e){btn.textContent='Delete';btn.disabled=false;toast('Failed to delete');}
 }
 
-function buildClusteredMap(containerId,leads,opts={}){
-  if(maps[containerId]){try{maps[containerId].remove();}catch(e){}delete maps[containerId];delete clusters[containerId];}
-  const m=L.map(containerId,{zoomControl:true,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(m);
-  maps[containerId]=m;
-  const cg=L.markerClusterGroup({maxClusterRadius:60,spiderfyOnMaxZoom:true,showCoverageOnHover:false,zoomToBoundsOnClick:true,
-    iconCreateFunction:(c)=>{const n=c.getChildCount();const sz=n>100?50:n>20?42:34;return L.divIcon({html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(37,99,235,0.88);color:#fff;display:flex;align-items:center;justify-content:center;font-size:${sz>40?14:12}px;font-weight:700;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${n>999?'999+':n}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],className:''});}
-  });
-  clusters[containerId]=cg;
-  leads.filter(l=>l.lat&&l.lng).forEach(lead=>{
-    const marker=L.marker([lead.lat,lead.lng],{icon:pinIcon(scColor(lead.status))});
-    marker._lead_id=lead.id;
-    marker.on('click',()=>{if(opts.onClick)opts.onClick(lead,marker);else showPinDetail(lead,containerId);});
-    lead._marker=marker;cg.addLayer(marker);
-  });
-  m.addLayer(cg);
-  const pos=leads.filter(l=>l.lat&&l.lng);
-  if(pos.length)m.fitBounds(L.latLngBounds(pos.map(l=>[l.lat,l.lng])),{padding:[30,30],maxZoom:14});
-  else m.setView(FORT_WAYNE,12);
-  return m;
+function drawBaseMap(ctx,w,h){
+  ctx.fillStyle='#e8f0e4';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='#c5cfc0';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(0,h*i/4);ctx.lineTo(w,h*i/4);ctx.stroke();}
+  for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(w*i/5,0);ctx.lineTo(w*i/5,h);ctx.stroke();}
 }
 
-// Drop pin
-function enableDropPin(mapId){
-  const m=maps[mapId];if(!m)return;
-  S.dropPinMode=true;m.getContainer().style.cursor='crosshair';
-  const wrap=document.getElementById(mapId)?.parentElement;
-  const bar=document.createElement('div');bar.className='drop-bar';bar.id='drop-bar';
-  bar.innerHTML=`📍 Tap a house on the map &nbsp;<span style="color:var(--red);cursor:pointer;font-weight:600;" onclick="disableDropPin('${mapId}')">Cancel</span>`;
-  if(wrap){wrap.style.position='relative';wrap.appendChild(bar);}
-  m.once('click',async(e)=>{
-    if(!S.dropPinMode)return;disableDropPin(mapId);
-    const lat=e.latlng.lat,lng=e.latlng.lng;
-    bar.textContent='Looking up address...';document.getElementById('drop-bar')?.remove();
-    // Reverse geocode to get real address
-    let addr='';let city='Fort Wayne, IN';
-    try{
-      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`,{headers:{'Accept-Language':'en'}});
-      const d=await r.json();
-      if(d&&d.address){
-        const a=d.address;
-        const num=a.house_number||'';
-        const street=a.road||a.pedestrian||'';
-        addr=num&&street?`${num} ${street}`.toUpperCase():d.display_name?.split(',')[0]?.toUpperCase()||'';
-        city=[a.city||a.town||a.village||'',a.state_code||a.state||'',a.postcode||''].filter(Boolean).join(', ');
-      }
-    }catch(e){}
-    // Let user confirm/edit the address
-    const confirmed=prompt('Address (edit if needed):',addr||'');
-    if(!confirmed)return;
-    try{
-      const rows=await dbPost('leads',{addr:confirmed,city,status:'manual',rep:S.user.name,lat,lng,import_tag:'manual'});
-      if(rows&&rows[0]){
-        const lead=rows[0];S.leads.push(lead);
-        const marker=L.marker([lat,lng],{icon:pinIcon(scColor('manual'))});
-        marker._lead_id=lead.id;
-        marker.on('click',()=>showPinDetail(lead,mapId));
-        lead._marker=marker;
-        if(clusters[mapId])clusters[mapId].addLayer(marker);
-        else marker.addTo(maps[mapId]);
-        toast('Pin dropped!');
-      }
-    }catch(e){toast('Failed to save pin');}
+function drawLeadPins(ctx,leads,selectedIds){
+  leads.forEach(lead=>{
+    const sel=selectedIds&&selectedIds.includes(lead.id);
+    if(sel){ctx.beginPath();ctx.arc(lead.x,lead.y,13,0,Math.PI*2);ctx.fillStyle='rgba(37,99,235,0.15)';ctx.fill();}
+    ctx.beginPath();ctx.arc(lead.x,lead.y,sel?8:6,0,Math.PI*2);
+    ctx.fillStyle=scColor(lead.status);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=sel?3:2;ctx.stroke();
+    if(S.selPin===lead.id){ctx.beginPath();ctx.arc(lead.x,lead.y,12,0,Math.PI*2);ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.stroke();}
   });
 }
-function disableDropPin(mapId){S.dropPinMode=false;const m=maps[mapId];if(m)m.getContainer().style.cursor='';document.getElementById('drop-bar')?.remove();}
 
-// My Map
+function drawPoly(ctx,pts,done){
+  if(!pts.length)return;
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  pts.forEach(p=>ctx.lineTo(p.x,p.y));
+  if(done){ctx.closePath();ctx.fillStyle='rgba(37,99,235,0.12)';ctx.fill();ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.setLineDash([]);ctx.stroke();}
+  else{ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);}
+  pts.forEach((p,i)=>{
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    ctx.fillStyle=i===0?'#2563eb':'#fff';ctx.fill();
+    ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.stroke();
+    if(i===0&&pts.length>=3&&!done){ctx.beginPath();ctx.arc(p.x,p.y,11,0,Math.PI*2);ctx.strokeStyle='rgba(37,99,235,0.4)';ctx.lineWidth=1.5;ctx.stroke();}
+  });
+}
+
+function mkCanvas(id){
+  const canvas=document.createElement('canvas');
+  canvas.id=id;canvas.width=CW;canvas.height=CH;
+  canvas.className='map-canvas';canvas.style.width='100%';
+  return canvas;
+}
+
+function mkLegend(){
+  const legend=document.createElement('div');
+  legend.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;';
+  STATUSES.forEach(s=>{legend.innerHTML+=`<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#555;font-weight:500;"><div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></div>${s.label}</div>`;});
+  return legend;
+}
+
 async function renderMyMap(){
   const el=document.getElementById('pane-map');if(!el)return;el.innerHTML='';
-  const mine=myLeads(S.user.name);
-  const tb=document.createElement('div');tb.className='tool-bar';
-  const db=document.createElement('button');db.className='tool-btn';db.textContent='📍 Drop pin';db.onclick=()=>enableDropPin('my-map');
-  tb.appendChild(db);el.appendChild(tb);
+  const me=S.user.name;const mine=myLeads(me);
+
   el.appendChild(mkLegend());
+
   const wrap=document.createElement('div');wrap.className='map-wrap';
-  const md=document.createElement('div');md.id='my-map';md.className='leaflet-map';
-  wrap.appendChild(md);el.appendChild(wrap);
-  if(!mine.length){const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned yet';el.appendChild(e);}
-  const hint=document.createElement('div');hint.className='hint-bar';
-  const ung=mine.filter(l=>!l.lat||!l.lng);
-  hint.textContent=ung.length?`${ung.length} addresses without coordinates`:'';
-  if(!ung.length)hint.style.display='none';
-  el.appendChild(hint);
-  setTimeout(()=>{
-    const lmap=buildClusteredMap('my-map',mine);
-    // Location tracking
-    const locBtn=document.createElement('button');locBtn.className='tool-btn';locBtn.textContent='📍 My location';locBtn.style.marginLeft='auto';
-    let locMarker=null,locCircle=null,locWatchId=null;
-    locBtn.onclick=()=>{
-      if(locWatchId){navigator.geolocation.clearWatch(locWatchId);locWatchId=null;if(locMarker)lmap.removeLayer(locMarker);if(locCircle)lmap.removeLayer(locCircle);locMarker=null;locCircle=null;locBtn.textContent='📍 My location';locBtn.classList.remove('on');return;}
-      if(!navigator.geolocation){toast('Location not available');return;}
-      locBtn.classList.add('on');locBtn.textContent='📍 Tracking...';
-      locWatchId=navigator.geolocation.watchPosition(pos=>{
-        const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=pos.coords.accuracy;
-        if(locMarker)lmap.removeLayer(locMarker);if(locCircle)lmap.removeLayer(locCircle);
-        locCircle=L.circle([lat,lng],{radius:acc,color:'#2563eb',fillColor:'#2563eb',fillOpacity:0.1,weight:1}).addTo(lmap);
-        locMarker=L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb,0 2px 6px rgba(0,0,0,0.3);"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(lmap);
-        lmap.setView([lat,lng],lmap.getZoom()<14?16:lmap.getZoom());
-      },err=>{toast('Could not get location');locBtn.classList.remove('on');locBtn.textContent='📍 My location';},{enableHighAccuracy:true,maximumAge:5000});
-    };
-    document.querySelector('.tool-bar')?.appendChild(locBtn);
+  const mapDiv=document.createElement('div');mapDiv.id='my-leaflet-map';mapDiv.className='leaflet-map';
+  wrap.appendChild(mapDiv);el.appendChild(wrap);
+
+  if(!mine.length){
+    const e=document.createElement('div');e.className='empty';e.textContent='No leads assigned to you yet';el.appendChild(e);
+  }
+
+  const geocodeHint=document.createElement('div');
+  geocodeHint.className='hint-bar';geocodeHint.id='geocode-hint';
+  geocodeHint.textContent='Locating addresses on map...';
+  el.appendChild(geocodeHint);
+
+  setTimeout(async()=>{
+    const lmap=mkLeafletMap('my-leaflet-map',mine,{
+      onClick:(lead,marker)=>{
+        S.selPin=lead.id;
+        detail.style.display='block';
+        document.getElementById('mpd-addr').textContent=lead.addr;
+        document.getElementById('mpd-city').textContent=lead.city||'';
+        const ps=document.getElementById('mpd-status');ps.innerHTML='';
+        ps.appendChild(mkStatusBtns(lead,()=>{renderMyMap();renderMyList();renderMyStats();}));
+      }
+    });
+
+    const ungeocoded=mine.filter(l=>!l.lat||!l.lng);
+    if(ungeocoded.length){
+      geocodeHint.textContent=`Geocoding ${ungeocoded.length} addresses... this may take a moment.`;
+      for(const lead of ungeocoded){
+        await ensureLatLng(lead);
+        if(lead.lat&&lead.lng){
+          addPinToMap(lmap,lead);
+          const positioned=mine.filter(l=>l.lat&&l.lng);
+          if(positioned.length){lmap.fitBounds(L.latLngBounds(positioned.map(l=>[l.lat,l.lng])),{padding:[30,30],maxZoom:14});}
+        }
+        await new Promise(r=>setTimeout(r,350));
+      }
+      geocodeHint.textContent='All addresses mapped!';
+      setTimeout(()=>geocodeHint.style.display='none',2000);
+    } else {
+      geocodeHint.style.display='none';
+    }
   },100);
 }
 
-// My List
 function renderMyList(){
   const el=document.getElementById('pane-mylist');if(!el)return;el.innerHTML='';
   const mine=myLeads(S.user.name);
-  if(!mine.length){el.innerHTML='<div class="empty">No leads assigned yet</div>';return;}
-  mine.forEach(lead=>el.appendChild(mkLeadCard(lead,{statusBtns:()=>{renderMyList();renderMyStats();},onDelete:true})));
+  if(!mine.length){el.innerHTML='<div class="empty">No leads assigned to you yet</div>';return;}
+  mine.forEach(lead=>el.appendChild(mkLeadCard(lead,{statusBtns:()=>{renderMyList();renderMyStats();renderMyMap();},onDelete:true})));
 }
 
-// My Stats
 async function renderMyStats(){
   const el=document.getElementById('pane-mystats');if(!el)return;el.innerHTML='';
   const me=S.user.name;const mine=myLeads(me);
   const sold=mine.filter(l=>l.status==='sold').length;
   const dk=mine.filter(l=>isKnocked(l.status)).length;
-  const manSales=S.manualSales[me]||[];const rate=S.rate;
-  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="stat-label">Sold</div><div class="stat-val" style="color:var(--green)">${sold}</div></div><div class="stat"><div class="stat-label">Doors knocked</div><div class="stat-val" style="color:var(--blue)">${dk}</div></div><div class="stat"><div class="stat-label">Interested</div><div class="stat-val" style="color:#16a34a">${mine.filter(l=>l.status==='interested').length}</div></div><div class="stat"><div class="stat-label">Not yet knocked</div><div class="stat-val">${mine.filter(l=>l.status==='new').length}</div></div></div><div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:13px;color:var(--text3);">${sold} sales × $${rate}</span><span style="font-size:22px;font-weight:700;color:var(--green);">$${(sold*rate).toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${dk?Math.round(sold/dk*100):0}%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:4px;">${dk?Math.round(sold/dk*100):0}% close rate</div></div>`;
+  const manSales=S.manualSales[me]||[];
+  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="stat-label">Sold</div><div class="stat-val" style="color:#059669">${sold}</div></div><div class="stat"><div class="stat-label">Doors knocked</div><div class="stat-val" style="color:#2563eb">${dk}</div></div><div class="stat"><div class="stat-label">Interested</div><div class="stat-val" style="color:#16a34a">${mine.filter(l=>l.status==='interested').length}</div></div><div class="stat"><div class="stat-label">Not yet knocked</div><div class="stat-val">${mine.filter(l=>l.status==='new').length}</div></div></div><div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:13px;color:#888;">${sold} sales × $${RATE}</span><span style="font-size:22px;font-weight:700;color:#059669;">$${(sold*RATE).toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${dk?Math.round(sold/dk*100):0}%"></div></div><div style="font-size:12px;color:#888;margin-top:4px;">${dk?Math.round(sold/dk*100):0}% close rate</div></div>`;
   const sec=document.createElement('div');sec.innerHTML='<div class="sec-title">My logged deals</div>';
   const form=document.createElement('div');form.className='add-sale-form';
-  form.innerHTML=`<div style="font-size:13px;color:var(--text3);margin-bottom:10px;">Log a deal manually</div><input class="inp" id="sale-addr" placeholder="Customer address"><input class="inp" id="sale-note" placeholder="Note (optional)"><button class="btn btn-primary" style="margin-bottom:0;" onclick="addManualSale()">Add deal</button>`;
+  form.innerHTML=`<div style="font-size:13px;color:#888;margin-bottom:10px;">Log a deal manually</div><input class="inp" id="sale-addr" placeholder="Customer address"><input class="inp" id="sale-note" placeholder="Note (optional)"><button class="btn btn-primary" style="margin-bottom:0;" onclick="addManualSale()">Add deal</button>`;
   sec.appendChild(form);
   if(manSales.length){
-    manSales.forEach((sale,i)=>{const row=document.createElement('div');row.className='sale-row';row.innerHTML=`<div><div style="font-size:14px;font-weight:600;color:var(--text);">${sale.addr}</div>${sale.note?`<div style="font-size:12px;color:var(--text3);">${sale.note}</div>`:''}<div style="font-size:11px;color:var(--text4);">${sale.sale_date||''}</div></div><button class="btn btn-sm btn-danger" onclick="deleteManualSale('${sale.id}',${i})">Delete</button>`;sec.appendChild(row);});
-    const tot=document.createElement('div');tot.style.cssText='display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border2);margin-top:4px;';
-    tot.innerHTML=`<span style="font-size:14px;font-weight:600;color:var(--text);">${manSales.length} deal${manSales.length!==1?'s':''}</span><span style="font-size:18px;font-weight:700;color:var(--green);">$${(manSales.length*rate).toLocaleString()}</span>`;
+    manSales.forEach((sale,i)=>{
+      const row=document.createElement('div');row.className='sale-row';
+      row.innerHTML=`<div><div style="font-size:14px;font-weight:600;color:#111;">${sale.addr}</div>${sale.note?`<div style="font-size:12px;color:#888;">${sale.note}</div>`:''}<div style="font-size:11px;color:#aaa;">${sale.sale_date||''}</div></div><button class="btn btn-sm btn-danger" onclick="deleteManualSale('${sale.id}',${i})">Delete</button>`;
+      sec.appendChild(row);
+    });
+    const tot=document.createElement('div');tot.style.cssText='display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #f0f0f0;margin-top:4px;';
+    tot.innerHTML=`<span style="font-size:14px;font-weight:600;color:#111;">${manSales.length} deal${manSales.length!==1?'s':''}</span><span style="font-size:18px;font-weight:700;color:#059669;">$${(manSales.length*RATE).toLocaleString()}</span>`;
     sec.appendChild(tot);
-  } else sec.innerHTML+='<div class="empty">No deals logged yet</div>';
+  } else {
+    sec.innerHTML+='<div class="empty">No deals logged yet</div>';
+  }
   el.appendChild(sec);
 }
 
@@ -577,87 +613,170 @@ async function addManualSale(){
   const addr=document.getElementById('sale-addr').value.trim();if(!addr)return;
   const note=document.getElementById('sale-note').value.trim();const me=S.user.name;
   const dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  try{const rows=await dbPost('manual_sales',{rep:me,addr,note,sale_date:dateStr});if(!S.manualSales[me])S.manualSales[me]=[];if(rows&&rows[0])S.manualSales[me].unshift(rows[0]);document.getElementById('sale-addr').value='';document.getElementById('sale-note').value='';renderMyStats();toast('Deal logged!');}
-  catch(e){toast('Failed to save deal');}
+  try{
+    const rows=await dbPost('manual_sales',{rep:me,addr,note,sale_date:dateStr});
+    if(!S.manualSales[me])S.manualSales[me]=[];
+    if(rows&&rows[0])S.manualSales[me].unshift(rows[0]);
+    document.getElementById('sale-addr').value='';document.getElementById('sale-note').value='';
+    renderMyStats();toast('Deal logged!');
+  }catch(e){toast('Failed to save deal');}
 }
-async function deleteManualSale(id){try{await dbDelete('manual_sales',id);const me=S.user.name;S.manualSales[me]=S.manualSales[me].filter(s=>s.id!==id);renderMyStats();toast('Deal deleted');}catch(e){toast('Failed');}}
 
-// Assign Territory
+async function deleteManualSale(id,i){
+  try{
+    await dbDelete('manual_sales',id);
+    const me=S.user.name;
+    S.manualSales[me]=S.manualSales[me].filter(s=>s.id!==id);
+    renderMyStats();toast('Deal deleted');
+  }catch(e){toast('Failed to delete');}
+}
+
 async function renderAssign(){
-  const el=document.getElementById('pane-assign');if(!el)return;el.innerHTML='';resetPoly();
-  const hint=document.createElement('div');hint.className='hint-bar';hint.id='poly-hint';hint.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close.';el.appendChild(hint);
-  const tb=document.createElement('div');tb.className='tool-bar';
+  const el=document.getElementById('pane-assign');if(!el)return;el.innerHTML='';
+  resetPoly();
+
+  const hint=document.createElement('div');hint.className='hint-bar';hint.id='poly-hint';
+  hint.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close the shape.';
+  el.appendChild(hint);
+
+  const toolbar=document.createElement('div');toolbar.className='tool-bar';
   const drawBtn=document.createElement('button');drawBtn.className='tool-btn';drawBtn.id='draw-btn';drawBtn.textContent='Draw territory';
-  const undoBtn=document.createElement('button');undoBtn.className='tool-btn';undoBtn.textContent='Undo';undoBtn.style.display='none';
+  const undoBtn=document.createElement('button');undoBtn.className='tool-btn';undoBtn.id='undo-btn';undoBtn.textContent='Undo';undoBtn.style.display='none';
   const clearBtn=document.createElement('button');clearBtn.className='tool-btn';clearBtn.textContent='Clear';
-  const cnt=document.createElement('span');cnt.id='sel-count';cnt.style.cssText='font-size:12px;color:var(--text2);margin-left:auto;font-weight:600;';
-  tb.appendChild(drawBtn);tb.appendChild(undoBtn);tb.appendChild(clearBtn);tb.appendChild(cnt);el.appendChild(tb);
-  const wrap=document.createElement('div');wrap.className='map-wrap';
-  const md=document.createElement('div');md.id='assign-map';md.className='leaflet-map';wrap.appendChild(md);el.appendChild(wrap);
+  const countEl=document.createElement('span');countEl.id='sel-count';countEl.style.cssText='font-size:12px;color:#555;margin-left:auto;font-weight:600;';
+  toolbar.appendChild(drawBtn);toolbar.appendChild(undoBtn);toolbar.appendChild(clearBtn);toolbar.appendChild(countEl);
+  el.appendChild(toolbar);
+
   el.appendChild(mkLegend());
+
+  const wrap=document.createElement('div');wrap.className='map-wrap';
+  const mapDiv=document.createElement('div');mapDiv.id='assign-leaflet-map';mapDiv.className='leaflet-map';
+  wrap.appendChild(mapDiv);el.appendChild(wrap);
+
   const panel=document.createElement('div');panel.className='assign-panel';panel.id='assign-panel';
   const assignable=S.members.filter(m=>m.role==='rep'||m.role==='manager');
-  panel.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;" id="panel-title">0 leads selected</div><select class="sel" id="assign-rep" style="margin-bottom:8px;">${assignable.map(r=>`<option value="${r.name}">${r.name} (${r.role})</option>`).join('')}</select><button class="btn btn-primary" style="margin-bottom:0;" onclick="doAssign()">Assign territory</button>`;
+  panel.innerHTML=`<div style="font-size:13px;font-weight:700;color:#111;margin-bottom:8px;" id="panel-title">0 leads selected</div><select class="sel" id="assign-rep" style="margin-bottom:8px;">${assignable.map(r=>`<option value="${r.name}">${r.name} (${r.role})</option>`).join('')}</select><button class="btn btn-primary" style="margin-bottom:0;" onclick="doAssign()">Assign territory</button>`;
   el.appendChild(panel);
-  const m=buildClusteredMap('assign-map',S.leads);
-  let drawing=false,polyline=null,polygon=null,dots=[];
-  function redraw(){
-    if(polyline){m.removeLayer(polyline);polyline=null;}if(polygon){m.removeLayer(polygon);polygon=null;}
-    dots.forEach(d=>m.removeLayer(d));dots=[];
+
+  await geocodeVisible(S.leads);
+
+  const m=mkLeafletMap('assign-leaflet-map',S.leads);
+  let drawing=false;
+  let polyline=null;
+  let polygon=null;
+  let dotMarkers=[];
+
+  function updateHint(){
+    const h=document.getElementById('poly-hint');if(!h)return;
+    if(!drawing){h.textContent='Tap "Draw territory" then tap the map to place points. Tap the first point to close the shape.';return;}
+    if(!S.polyPoints.length)h.textContent='Tap the map to place your first point.';
+    else if(S.polyPoints.length<3)h.textContent='Keep tapping to add more points.';
+    else h.textContent='Tap the first point (blue dot) to close and select leads inside.';
+  }
+
+  function redrawPoly(){
+    if(polyline){m.removeLayer(polyline);polyline=null;}
+    if(polygon){m.removeLayer(polygon);polygon=null;}
+    dotMarkers.forEach(d=>m.removeLayer(d));dotMarkers=[];
     if(!S.polyPoints.length)return;
-    const lls=S.polyPoints.map(p=>[p.lat,p.lng]);
-    if(S.polyDone){polygon=L.polygon(lls,{color:'#2563eb',fillColor:'#2563eb',fillOpacity:0.12,weight:2}).addTo(m);}
-    else{polyline=L.polyline(lls,{color:'#2563eb',weight:2,dashArray:'6,4'}).addTo(m);}
+    const latlngs=S.polyPoints.map(p=>[p.lat,p.lng]);
+    if(S.polyDone){
+      polygon=L.polygon(latlngs,{color:'#2563eb',fillColor:'#2563eb',fillOpacity:0.12,weight:2}).addTo(m);
+    } else {
+      polyline=L.polyline(latlngs,{color:'#2563eb',weight:2,dashArray:'6,4'}).addTo(m);
+    }
     S.polyPoints.forEach((p,i)=>{
-      const icon=L.divIcon({className:'',html:`<div style="width:10px;height:10px;border-radius:50%;background:${i===0?'#2563eb':'#fff'};border:2px solid #2563eb;${i===0&&S.polyPoints.length>=3&&!S.polyDone?'box-shadow:0 0 0 4px rgba(37,99,235,0.25);':''};"></div>`,iconSize:[10,10],iconAnchor:[5,5]});
+      const icon=L.divIcon({className:'',html:`<div style="width:10px;height:10px;border-radius:50%;background:${i===0?'#2563eb':'#fff'};border:2px solid #2563eb;${i===0&&S.polyPoints.length>=3&&!S.polyDone?'box-shadow:0 0 0 4px rgba(37,99,235,0.25);':''}"></div>`,iconSize:[10,10],iconAnchor:[5,5]});
       const dot=L.marker([p.lat,p.lng],{icon,zIndexOffset:1000}).addTo(m);
-      if(i===0&&S.polyPoints.length>=3&&!S.polyDone)dot.on('click',e=>{L.DomEvent.stop(e);closePoly();});
-      dots.push(dot);
+      if(i===0&&S.polyPoints.length>=3&&!S.polyDone){
+        dot.on('click',e=>{L.DomEvent.stop(e);closePoly();});
+      }
+      dotMarkers.push(dot);
     });
   }
+
   function closePoly(){
     S.polyDone=true;
-    S.polySelected=S.leads.filter(l=>l.lat&&l.lng&&polygon&&polygon.getBounds().contains(L.latLng(l.lat,l.lng))&&pointInLeafletPoly(l.lat,l.lng,S.polyPoints)).map(l=>l.id);
+    const positioned=S.leads.filter(l=>l.lat&&l.lng);
+    S.polySelected=positioned.filter(l=>{
+      const pt=L.latLng(l.lat,l.lng);
+      return polygon&&polygon.getBounds().contains(pt)&&pointInLeafletPoly(l.lat,l.lng,S.polyPoints);
+    }).map(l=>l.id);
     drawing=false;drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';
-    const c=document.getElementById('sel-count');if(c)c.textContent=S.polySelected.length+' selected';
+    const cnt=document.getElementById('sel-count');if(cnt)cnt.textContent=S.polySelected.length+' selected';
     const pt=document.getElementById('panel-title');if(pt)pt.textContent=S.polySelected.length+' lead'+(S.polySelected.length!==1?'s':'')+' in territory';
     panel.classList.add('show');
     const h=document.getElementById('poly-hint');if(h)h.textContent=S.polySelected.length+' leads selected. Choose a rep and assign.';
-    redraw();
+    redrawPoly();
   }
-  m.on('click',e=>{if(!drawing||S.polyDone)return;S.polyPoints.push({lat:e.latlng.lat,lng:e.latlng.lng});redraw();const h=document.getElementById('poly-hint');if(h)h.textContent=S.polyPoints.length<3?'Keep tapping to add points.':'Tap the blue dot to close.';});
-  drawBtn.onclick=()=>{drawing=!drawing;S.polyPoints=[];S.polyDone=false;S.polySelected=[];drawBtn.classList.toggle('on',drawing);drawBtn.textContent=drawing?'Drawing…':'Draw territory';undoBtn.style.display=drawing?'':'none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();m.dragging[drawing?'disable':'enable']();};
-  undoBtn.onclick=()=>{if(S.polyPoints.length>0){S.polyPoints.pop();S.polyDone=false;S.polySelected=[];panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();}};
-  clearBtn.onclick=()=>{drawing=false;resetPoly();drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';undoBtn.style.display='none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';redraw();m.dragging.enable();};
+
+  m.on('click',e=>{
+    if(!drawing||S.polyDone)return;
+    S.polyPoints.push({lat:e.latlng.lat,lng:e.latlng.lng});
+    redrawPoly();updateHint();
+  });
+
+  drawBtn.onclick=()=>{
+    drawing=!drawing;S.polyPoints=[];S.polyDone=false;S.polySelected=[];
+    drawBtn.classList.toggle('on',drawing);drawBtn.textContent=drawing?'Drawing…':'Draw territory';
+    undoBtn.style.display=drawing?'':'none';panel.classList.remove('show');
+    document.getElementById('sel-count').textContent='';redrawPoly();updateHint();
+    m.dragging[drawing?'disable':'enable']();
+  };
+  undoBtn.onclick=()=>{
+    if(S.polyPoints.length>0){S.polyPoints.pop();S.polyDone=false;S.polySelected=[];panel.classList.remove('show');document.getElementById('sel-count').textContent='';redrawPoly();updateHint();}
+  };
+  clearBtn.onclick=()=>{
+    drawing=false;resetPoly();drawBtn.classList.remove('on');drawBtn.textContent='Draw territory';
+    undoBtn.style.display='none';panel.classList.remove('show');document.getElementById('sel-count').textContent='';
+    redrawPoly();updateHint();m.dragging.enable();
+  };
+  updateHint();
+}
+
+function pointInLeafletPoly(lat,lng,pts){
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i].lng,yi=pts[i].lat,xj=pts[j].lng,yj=pts[j].lat;
+    if(((yi>lat)!=(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
 }
 
 async function doAssign(){
   const rep=document.getElementById('assign-rep').value;
-  const btn=document.querySelector('#assign-panel .btn-primary');btn.textContent='Saving...';btn.disabled=true;
+  const btn=document.querySelector('#assign-panel .btn-primary');
+  btn.textContent='Saving...';btn.disabled=true;
   try{
     await Promise.all(S.polySelected.map(id=>{const l=S.leads.find(x=>x.id===id);if(l){l.rep=rep;return dbPatch('leads',id,{rep});}return Promise.resolve();}));
-    const count=S.polySelected.length;resetPoly();
-    document.getElementById('assign-panel')?.classList.remove('show');
-    document.getElementById('sel-count').textContent='';
-    document.getElementById('poly-hint').textContent=`Assigned ${count} lead${count!==1?'s':''} to ${rep}! Draw another or done.`;
-    buildClusteredMap('assign-map',S.leads);toast(`${count} leads assigned to ${rep}`);
+    const count=S.polySelected.length;
+    resetPoly();
+    const panel=document.getElementById('assign-panel');if(panel)panel.classList.remove('show');
+    const cnt=document.getElementById('sel-count');if(cnt)cnt.textContent='';
+    const ctx=document.getElementById('assign-canvas')?.getContext('2d');
+    if(ctx){drawBaseMap(ctx,CW,CH);drawLeadPins(ctx,S.leads,null);}
+    const h=document.getElementById('poly-hint');if(h)h.textContent=`Assigned ${count} lead${count!==1?'s':''} to ${rep}. Draw another territory or done!`;
+    toast(`${count} leads assigned to ${rep}`);
   }catch(e){toast('Failed to assign');btn.textContent='Assign territory';btn.disabled=false;}
 }
 
-// Team
 function renderTeam(){
   const el=document.getElementById('pane-team');if(!el)return;el.innerHTML='';
   const grid=document.createElement('div');grid.className='stat-grid';
-  grid.innerHTML=`<div class="stat"><div class="stat-label">Total leads</div><div class="stat-val" style="color:var(--blue)">${S.leads.length}</div></div><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:var(--green)">${S.leads.filter(l=>l.status==='sold').length}</div></div><div class="stat"><div class="stat-label">Doors knocked</div><div class="stat-val">${S.leads.filter(l=>isKnocked(l.status)).length}</div></div><div class="stat"><div class="stat-label">Unassigned</div><div class="stat-val">${S.leads.filter(l=>!l.rep).length}</div></div>`;
+  grid.innerHTML=`<div class="stat"><div class="stat-label">Total leads</div><div class="stat-val" style="color:#2563eb">${S.leads.length}</div></div><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:#059669">${S.leads.filter(l=>l.status==='sold').length}</div></div><div class="stat"><div class="stat-label">Doors knocked</div><div class="stat-val">${S.leads.filter(l=>isKnocked(l.status)).length}</div></div><div class="stat"><div class="stat-label">Unassigned</div><div class="stat-val">${S.leads.filter(l=>!l.rep).length}</div></div>`;
   el.appendChild(grid);
   const sec=document.createElement('div');sec.innerHTML='<div class="sec-title">Rep breakdown</div>';
   S.members.filter(m=>m.role==='rep'||m.role==='manager').forEach(m=>{
-    const mine=S.leads.filter(l=>l.rep===m.name);const sold=mine.filter(l=>l.status==='sold').length;const dk=mine.filter(l=>isKnocked(l.status)).length;
-    const bc=m.role==='manager'?'badge-mgr':'badge-rep';const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">${av(m)}<div style="flex:1;"><span style="font-size:14px;font-weight:600;color:var(--text);">${m.name}</span> <span class="badge ${bc}" style="margin-left:0;">${m.role}</span></div><span class="pill" style="background:#dcfce7;color:#166534;">${sold} sold</span></div><div style="font-size:12px;color:var(--text3);margin-bottom:4px;">${dk} knocked · ${mine.length} total</div><div class="bar-wrap"><div class="bar-fill" style="width:${mine.length?Math.round(sold/mine.length*100):0}%"></div></div>`;
+    const mine=S.leads.filter(l=>l.rep===m.name);
+    const sold=mine.filter(l=>l.status==='sold').length;
+    const dk=mine.filter(l=>isKnocked(l.status)).length;
+    const bc=m.role==='manager'?'badge-mgr':'badge-rep';
+    const i=S.members.indexOf(m);
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div style="flex:1;"><span style="font-size:14px;font-weight:600;color:#111;">${m.name}</span> <span class="badge ${bc}" style="margin-left:0;">${m.role}</span></div><span class="pill" style="background:#dcfce7;color:#166534;">${sold} sold</span></div><div style="font-size:12px;color:#888;margin-bottom:4px;">${dk} knocked · ${mine.length} total leads</div><div class="bar-wrap"><div class="bar-fill" style="width:${mine.length?Math.round(sold/mine.length*100):0}%"></div></div>`;
     sec.appendChild(d);
   });
-  const addSec=document.createElement('div');addSec.innerHTML='<div class="sec-title" style="margin-top:4px;">Add member</div>';
+  const addSec=document.createElement('div');addSec.innerHTML='<div class="sec-title" style="margin-top:4px;">Add team member</div>';
   const form=document.createElement('div');form.className='add-sale-form';
   form.innerHTML=`<input class="inp" id="new-name" placeholder="Full name"><select class="sel" id="new-role" style="margin-bottom:8px;"><option value="manager">Manager</option><option value="rep">Rep</option></select><button class="btn btn-primary" style="margin-bottom:0;" onclick="addMember()">Add member</button>`;
   addSec.appendChild(form);
@@ -665,81 +784,287 @@ function renderTeam(){
   S.members.forEach((m,i)=>{
     const bc=m.role==='admin'?'badge-admin':m.role==='manager'?'badge-mgr':'badge-rep';
     const row=document.createElement('div');row.className='rep-row';
-    row.innerHTML=`<div style="display:flex;align-items:center;gap:10px;">${av(m)}<div><div style="font-size:14px;font-weight:600;color:var(--text);">${m.name}</div><span class="badge ${bc}" style="margin-left:0;">${m.role}</span></div></div>${m.role!=='admin'?`<button class="btn btn-sm btn-danger" onclick="removeMember('${m.id}')">Remove</button>`:'<span style="font-size:11px;color:var(--text4);">Protected</span>'}`; 
+    row.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div><div><div style="font-size:14px;font-weight:600;color:#111;">${m.name}</div><span class="badge ${bc}" style="margin-left:0;">${m.role}</span></div></div>${m.role!=='admin'?`<button class="btn btn-sm btn-danger" onclick="removeMember('${m.id}')">Remove</button>`:'<span style="font-size:11px;color:#aaa;">Protected</span>'}`;
     membSec.appendChild(row);
   });
   sec.appendChild(addSec);sec.appendChild(membSec);el.appendChild(sec);
 }
-async function addMember(){const name=document.getElementById('new-name').value.trim();const role=document.getElementById('new-role').value;if(!name)return;try{const rows=await dbPost('members',{name,role});if(rows&&rows[0])S.members.push(rows[0]);document.getElementById('new-name').value='';renderTeam();renderLogin();toast(name+' added!');}catch(e){toast('Failed');}}
-async function removeMember(id){try{await dbDelete('members',id);S.members=S.members.filter(m=>m.id!==id);renderTeam();renderLogin();toast('Member removed');}catch(e){toast('Failed');}}
 
-// Upload
+async function addMember(){
+  const name=document.getElementById('new-name').value.trim();const role=document.getElementById('new-role').value;
+  if(!name)return;
+  try{
+    const rows=await dbPost('members',{name,role});
+    if(rows&&rows[0])S.members.push(rows[0]);
+    document.getElementById('new-name').value='';
+    renderTeam();renderLogin();toast(name+' added!');
+  }catch(e){toast('Failed to add member');}
+}
+
+async function removeMember(id){
+  try{
+    await dbDelete('members',id);
+    S.members=S.members.filter(m=>m.id!==id);
+    renderTeam();renderLogin();toast('Member removed');
+  }catch(e){toast('Failed to remove member');}
+}
+
 function renderUpload(){
   const el=document.getElementById('pane-upload');if(!el)return;el.innerHTML='';
-  el.innerHTML=`<div class="sec-title">Upload leads</div><div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2);">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:var(--text4);margin-top:4px;">Supports street/city/state/zip + Geocodio latitude/longitude</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:10px;"></div>`;
-  const exp=document.createElement('button');exp.className='btn btn-success';exp.style.marginBottom='16px';exp.textContent='Export all leads as CSV';exp.onclick=exportCSV;el.appendChild(exp);
-  const impSec=document.createElement('div');impSec.innerHTML=`<div class="sec-title">Imports (${S.imports.length})</div>`;
-  if(!S.imports.length)impSec.innerHTML+='<div class="empty">No imports yet</div>';
-  else S.imports.forEach(imp=>{
-    const date=new Date(imp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    const card=document.createElement('div');card.className='card';card.style.marginBottom='10px';
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:13px;font-weight:600;color:var(--text);">${imp.file_name}</div><div style="font-size:11px;color:var(--text3);">${date} · ${imp.lead_count} leads</div></div><button class="btn btn-sm btn-danger" onclick="deleteImport('${imp.id}','${imp.import_tag}',this)">Delete</button></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="pill" style="background:#eff6ff;color:var(--blue);">${imp.lead_count} leads</span>${imp.existing_count?`<span class="pill" style="background:#f5f3ff;color:var(--purple);">${imp.existing_count} existing</span>`:''}</div>`;
-    impSec.appendChild(card);
-  });
+  el.innerHTML=`<div class="sec-title">Upload leads</div><div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:#555;">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:#aaa;margin-top:4px;">Supports street/city/state/zip + latitude/longitude</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:#888;text-align:center;margin-bottom:10px;"></div>`;
+  const expBtn=document.createElement('button');expBtn.className='btn btn-success';expBtn.style.marginBottom='16px';expBtn.textContent='Export all leads as CSV';expBtn.onclick=exportCSV;
+  el.appendChild(expBtn);
+  const impSec=document.createElement('div');
+  impSec.innerHTML=`<div class="sec-title">Imports (${S.imports.length})</div>`;
+  if(!S.imports.length){impSec.innerHTML+='<div class="empty">No imports yet</div>';}
+  else{
+    S.imports.forEach(imp=>{
+      const date=new Date(imp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      const card=document.createElement('div');card.className='card';card.style.marginBottom='10px';
+      card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div style="font-size:13px;font-weight:600;color:#111;">${imp.file_name}</div><div style="font-size:11px;color:#888;">${date} · ${imp.lead_count} leads</div></div><button class="btn btn-sm btn-danger" onclick="deleteImport('${imp.id}','${imp.import_tag}',this)">Delete</button></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="pill" style="background:#eff6ff;color:#2563eb;">${imp.lead_count} leads</span>${imp.existing_count?`<span class="pill" style="background:#f5f3ff;color:#7c3aed;">${imp.existing_count} existing customers</span>`:''}</div>`;
+      impSec.appendChild(card);
+    });
+  }
   el.appendChild(impSec);
 }
-async function deleteImport(importId,importTag,btn){if(!confirm('Delete all leads from this import?'))return;btn.textContent='Deleting...';btn.disabled=true;try{await api('DELETE','leads',null,`?import_tag=eq.${importTag}`);await dbDelete('imports',importId);S.leads=S.leads.filter(l=>l.import_tag!==importTag);S.imports=S.imports.filter(i=>i.id!==importId);renderUpload();toast('Import deleted');}catch(e){toast('Failed');btn.textContent='Delete';btn.disabled=false;}}
-function exportCSV(){const rows=[['Address','City','Status','Rep']];S.leads.forEach(l=>rows.push([l.addr,l.city||'',l.status,l.rep||'']));const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='yfm_leads.csv';a.click();}
-async function handleCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const status=document.getElementById('csv-status');status.textContent='Processing...';
-  const reader=new FileReader();
-  reader.onload=async ev=>{
-    function parseCSVLine(line){const result=[];let cur='',inQ=false;for(const ch of line){if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){result.push(cur.trim());cur='';}else cur+=ch;}result.push(cur.trim());return result;}
-    const lines=ev.target.result.split('\n').filter(Boolean);
-    const h=parseCSVLine(lines[0]).map(x=>x.replace(/"/g,'').toLowerCase());
-    const si=h.findIndex(x=>x.includes('street')&&!x.includes('geocodio'));
-    const ci=h.findIndex(x=>x==='city');const sti=h.findIndex(x=>x==='state');
-    const zi=h.findIndex(x=>x.includes('postal')||x==='zip');
-    const lati=h.findIndex(x=>x==='geocodio latitude'||x==='latitude');
-    const lngi=h.findIndex(x=>x==='geocodio longitude'||x==='longitude');
-    const resi=h.findIndex(x=>x==='result');const techi=h.findIndex(x=>x==='techavailable');
-    const importTag='imp_'+Date.now();const batch=[];let existingCount=0,copperCount=0;
-    for(let i=1;i<lines.length;i++){
-      const c=parseCSVLine(lines[i]).map(x=>x.replace(/^"|"$/g,''));if(!c[si])continue;
-      const tech=techi>=0?(c[techi]||'').toUpperCase():'';if(tech==='COPPER'){copperCount++;continue;}
-      const lat=lati>=0&&c[lati]?parseFloat(c[lati]):null;const lng=lngi>=0&&c[lngi]?parseFloat(c[lngi]):null;
-      const result=resi>=0?(c[resi]||'').toUpperCase():'';
-      const isExisting=result.includes('EXISTING')||result.includes('INCUMBENT');if(isExisting)existingCount++;
-      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':'new',rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
-    }
-    status.textContent=`Uploading ${batch.length} leads${copperCount?` (${copperCount} copper skipped)`:''}...`;
-    let added=0;
-    for(let i=0;i<batch.length;i+=50){try{const rows=await dbPost('leads',batch.slice(i,i+50));if(rows){S.leads.push(...rows);added+=rows.length;}}catch(err){console.error(err);}}
-    try{const impRows=await dbPost('imports',{file_name:file.name,lead_count:added,existing_count:existingCount,import_tag:importTag});if(impRows&&impRows[0])S.imports.unshift(impRows[0]);}catch(err){console.error(err);}
-    status.textContent=`${added} leads uploaded${existingCount?' · '+existingCount+' existing auto-tagged':''}${copperCount?' · '+copperCount+' copper skipped':''}`;
-    renderUpload();toast(`${added} leads uploaded!`);
-  };reader.readAsText(file);
+
+async function deleteImport(importId,importTag,btn){
+  if(!confirm('Delete all leads from this import? This cannot be undone.'))return;
+  btn.textContent='Deleting...';btn.disabled=true;
+  try{
+    await api('DELETE','leads',null,`?import_tag=eq.${importTag}`);
+    await dbDelete('imports',importId);
+    S.leads=S.leads.filter(l=>l.import_tag!==importTag);
+    S.imports=S.imports.filter(i=>i.id!==importId);
+    renderUpload();toast('Import deleted');
+  }catch(e){console.error(e);toast('Failed to delete import');btn.textContent='Delete';btn.disabled=false;}
 }
 
-// Commission
+function exportCSV(){
+  const rows=[['Address','City','Status','Rep']];
+  S.leads.forEach(l=>rows.push([l.addr,l.city||'',l.status,l.rep||'']));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='yfm_leads.csv';a.click();
+}
+
+async function handleCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const status=document.getElementById('csv-status');
+  status.textContent='Processing...';
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const lines=ev.target.result.split('\n').filter(Boolean);
+    const h=lines[0].split(',').map(x=>x.trim().replace(/"/g,''));
+    const si=h.findIndex(x=>x.toLowerCase().includes('street'));
+    const ci=h.findIndex(x=>x.toLowerCase().includes('city'));
+    const sti=h.findIndex(x=>x.toLowerCase().includes('state'));
+    const zi=h.findIndex(x=>x.toLowerCase().includes('postal')||x.toLowerCase().includes('zip'));
+    const lati=h.findIndex(x=>x.toLowerCase()==='latitude');
+    const lngi=h.findIndex(x=>x.toLowerCase()==='longitude');
+    const resi=h.findIndex(x=>x.toLowerCase()==='result');
+    const importTag='imp_'+Date.now();
+    const adminNames=S.members.filter(m=>m.role==='admin').map(m=>m.name);
+    const batch=[];let existingCount=0;
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));
+      if(!c[si])continue;
+      const lat=lati>=0&&c[lati]?parseFloat(c[lati]):null;
+      const lng=lngi>=0&&c[lngi]?parseFloat(c[lngi]):null;
+      const result=resi>=0?(c[resi]||'').toUpperCase():'';
+      const isExisting=result.includes('EXISTING')||result.includes('INCUMBENT');
+      if(isExisting)existingCount++;
+      // Assign to uploader (admin) by default
+      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':'new',rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
+    }
+    status.textContent=`Uploading ${batch.length} leads...`;
+    let added=0;const CHUNK=50;
+    for(let i=0;i<batch.length;i+=CHUNK){
+      try{const rows=await dbPost('leads',batch.slice(i,i+CHUNK));if(rows){S.leads.push(...rows);added+=rows.length;}}catch(err){console.error(err);}
+    }
+    try{
+      const impRows=await dbPost('imports',{file_name:file.name,lead_count:added,existing_count:existingCount,import_tag:importTag});
+      if(impRows&&impRows[0])S.imports.unshift(impRows[0]);
+    }catch(err){console.error('Import record failed:',err);}
+    status.textContent=`${added} leads uploaded${existingCount?' · '+existingCount+' existing customers auto-tagged':''}`;
+    renderUpload();toast(`${added} leads uploaded!`);
+  };
+  reader.readAsText(file);
+}
+
+async function geocodeAllInBackground(){
+  const ungeocoded=S.leads.filter(l=>!l.lat||!l.lng);
+  for(const lead of ungeocoded){
+    await ensureLatLng(lead);
+    await new Promise(r=>setTimeout(r,350));
+  }
+}
+
 async function renderCommission(){
   const el=document.getElementById('pane-commission');if(!el)return;el.innerHTML='';
-  const rate=S.rate;const reps=S.members.filter(m=>m.role==='rep'||m.role==='manager');
+  const reps=S.members.filter(m=>m.role==='rep'||m.role==='manager');
   const totalSold=S.leads.filter(l=>l.status==='sold').length;
-  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:var(--green)">${totalSold}</div></div><div class="stat"><div class="stat-label">Total commissions</div><div class="stat-val" style="color:var(--blue)">$${(totalSold*rate).toLocaleString()}</div></div></div>`;
+  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:#059669">${totalSold}</div></div><div class="stat"><div class="stat-label">Total commissions</div><div class="stat-val" style="color:#2563eb">$${(totalSold*RATE).toLocaleString()}</div></div></div>`;
   const maxSold=Math.max(...reps.map(r=>S.leads.filter(l=>l.rep===r.name&&l.status==='sold').length),1);
   for(const r of reps){
     const sold=S.leads.filter(l=>l.rep===r.name&&l.status==='sold').length;
-    let man=0;try{const rows=await dbGet('manual_sales',`?rep=eq.${encodeURIComponent(r.name)}&select=id`);man=(rows||[]).length;}catch(e){}
-    const earn=(sold+man)*rate;const pct=Math.round(sold/maxSold*100);
+    let man=0;
+    try{const rows=await dbGet('manual_sales',`?rep=eq.${encodeURIComponent(r.name)}&select=id`);man=(rows||[]).length;}catch(e){}
+    const earn=(sold+man)*RATE;const pct=Math.round(sold/maxSold*100);
+    const i=S.members.indexOf(r);
     const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:14px;font-weight:600;color:var(--text);">${r.name}</span><span style="font-size:18px;font-weight:700;color:var(--green);">$${earn.toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:4px;">${sold} assigned${man?` + ${man} manual`:''}  · $${rate}/sale</div>`;
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:14px;font-weight:600;color:#111;">${r.name}</span><span style="font-size:18px;font-weight:700;color:#059669;">$${earn.toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:#888;margin-top:4px;">${sold} assigned${man?` + ${man} manual`:''} · $${RATE}/sale</div>`;
     el.appendChild(d);
   }
 }
 
-async function init(){await loadData();renderLogin();}
+function renderSettings(){
+  const el=document.getElementById('pane-settings');if(!el)return;el.innerHTML='';
+  // Settings header
+  const header=document.createElement('div');
+  header.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:16px;';
+  header.innerHTML='<div style="font-size:20px;font-weight:700;color:#111;">⚙️ Settings</div>';
+  el.appendChild(header);
+
+  // Nav items
+  const navItems=[
+    {id:'lead-statuses',label:'Lead Statuses',icon:'🎨'},
+    {id:'roles',label:'Roles & Permissions',icon:'🔐'},
+    {id:'teams',label:'Teams',icon:'👥'},
+    {id:'areas',label:'Areas',icon:'📍'},
+  ];
+  const nav=document.createElement('div');nav.className='settings-nav';
+  const subs={};
+  navItems.forEach((item,i)=>{
+    const btn=document.createElement('button');btn.className='settings-nav-item'+(i===0?' on':'');
+    btn.innerHTML=`<span style="margin-right:8px;">${item.icon}</span>${item.label}`;
+    const sub=document.createElement('div');sub.className='settings-sub'+(i===0?' on':'');sub.id='settings-sub-'+item.id;
+    subs[item.id]=sub;
+    btn.onclick=()=>{
+      nav.querySelectorAll('.settings-nav-item').forEach(b=>b.classList.remove('on'));
+      el.querySelectorAll('.settings-sub').forEach(s=>s.classList.remove('on'));
+      btn.classList.add('on');sub.classList.add('on');
+    };
+    nav.appendChild(btn);
+  });
+  el.appendChild(nav);
+
+  // Lead Statuses sub-panel
+  const lsSub=subs['lead-statuses'];
+  renderLeadStatusesEditor(lsSub);
+  el.appendChild(lsSub);
+
+  // Roles sub-panel
+  const rolesSub=subs['roles'];
+  rolesSub.innerHTML=`<div class="card"><div class="sec-title">Roles & Permissions</div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:600;color:#111;margin-bottom:4px;">🔴 Admin</div>
+      <div style="font-size:12px;color:#888;">Full access: upload leads, manage team, assign territory, view commission, edit settings.</div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:600;color:#1e40af;margin-bottom:4px;">🔵 Manager</div>
+      <div style="font-size:12px;color:#888;">Can assign territory to reps. Views all leads on map.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:4px;">🟢 Rep</div>
+      <div style="font-size:12px;color:#888;">Views only assigned leads. Can update status and log deals.</div>
+    </div>
+  </div>`;
+  el.appendChild(rolesSub);
+
+  // Teams sub-panel
+  const teamsSub=subs['teams'];
+  teamsSub.innerHTML='<div class="hint-bar">Manage team members from the <strong>Team</strong> tab.</div>';
+  el.appendChild(teamsSub);
+
+  // Areas sub-panel
+  const areasSub=subs['areas'];
+  areasSub.innerHTML='<div class="hint-bar">Draw and assign territories from the <strong>Assign territory</strong> tab.</div>';
+  el.appendChild(areasSub);
+}
+
+function renderLeadStatusesEditor(container){
+  container.innerHTML='';
+  const titleRow=document.createElement('div');
+  titleRow.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;';
+  titleRow.innerHTML='<div class="sec-title" style="margin-bottom:0;">Lead Statuses</div>';
+  container.appendChild(titleRow);
+
+  const card=document.createElement('div');card.className='card';
+  STATUSES.forEach((s,idx)=>{
+    const row=document.createElement('div');row.className='status-row';
+    row.innerHTML=`
+      <div class="status-dot" style="background:${s.color};" id="sdot-${idx}" title="Edit">${s.icon||'●'}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;color:#111;">${s.label}</div>
+        <div style="font-size:11px;color:#888;">${s.key}</div>
+      </div>
+      <button class="btn btn-sm" style="margin:0;" onclick="toggleStatusEdit(${idx})">Edit</button>
+    `;
+    // Edit panel
+    const editPanel=document.createElement('div');editPanel.className='edit-panel';editPanel.id='sedit-'+idx;
+    // Name input
+    editPanel.innerHTML=`<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">Display Name</div>
+      <input class="inp" id="sname-${idx}" value="${s.label}" style="margin-bottom:12px;" placeholder="Status name">
+      <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">Color</div>
+      <div class="color-picker-wrap" id="scolors-${idx}"></div>
+      <div style="font-size:12px;font-weight:600;color:#555;margin:10px 0 6px;">Icon</div>
+      <div class="icon-picker-wrap" id="sicons-${idx}"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-primary btn-sm" onclick="saveStatusEdit(${idx})" style="flex:1;">Save</button>
+        <button class="btn btn-sm" onclick="toggleStatusEdit(${idx})" style="flex:1;">Cancel</button>
+      </div>`;
+    card.appendChild(row);
+    card.appendChild(editPanel);
+
+    // Populate colors
+    setTimeout(()=>{
+      const colWrap=document.getElementById('scolors-'+idx);
+      if(!colWrap)return;
+      STATUS_COLORS.forEach(c=>{
+        const sw=document.createElement('div');sw.className='color-swatch'+(s.color===c?' on':'');
+        sw.style.background=c;sw.dataset.color=c;
+        sw.onclick=()=>{colWrap.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('on'));sw.classList.add('on');};
+        colWrap.appendChild(sw);
+      });
+      const iconWrap=document.getElementById('sicons-'+idx);
+      if(!iconWrap)return;
+      STATUS_ICONS.forEach(ic=>{
+        const opt=document.createElement('div');opt.className='icon-opt'+(s.icon===ic?' on':'');
+        opt.textContent=ic;opt.dataset.icon=ic;
+        opt.onclick=()=>{iconWrap.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('on'));opt.classList.add('on');};
+        iconWrap.appendChild(opt);
+      });
+    },50);
+  });
+  container.appendChild(card);
+}
+
+function toggleStatusEdit(idx){
+  const panel=document.getElementById('sedit-'+idx);
+  if(!panel)return;
+  const isOpen=panel.classList.contains('on');
+  document.querySelectorAll('.edit-panel').forEach(p=>p.classList.remove('on'));
+  if(!isOpen)panel.classList.add('on');
+}
+
+function saveStatusEdit(idx){
+  const nameEl=document.getElementById('sname-'+idx);
+  const selColor=document.querySelector(`#scolors-${idx} .color-swatch.on`);
+  const selIcon=document.querySelector(`#sicons-${idx} .icon-opt.on`);
+  if(nameEl)STATUSES[idx].label=nameEl.value.trim()||STATUSES[idx].label;
+  if(selColor)STATUSES[idx].color=selColor.dataset.color;
+  if(selIcon)STATUSES[idx].icon=selIcon.dataset.icon;
+  saveStatuses();
+  const sub=document.getElementById('settings-sub-lead-statuses');
+  if(sub)renderLeadStatusesEditor(sub);
+  toast('Status updated!');
+}
+
+async function init(){
+  await loadData();
+  renderLogin();
+}
+
 init();
 </script>
 </body>
