@@ -284,6 +284,10 @@ function myLeads(n){
   if(user&&user.role==='admin')return S.leads;
   return S.leads.filter(l=>l.rep===n);
 }
+function myPersonalLeads(n){
+  // Always returns only leads assigned to this person — used for stats, not map
+  return S.leads.filter(l=>l.rep===n);
+}
 function av(m){const i=S.members.findIndex(x=>x.name===m.name);return `<div class="av" style="background:${AV_BG[i%6]};color:${AV_TX[i%6]}">${m.name.slice(0,2).toUpperCase()}</div>`;}
 function pointInLeafletPoly(lat,lng,pts){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].lng,yi=pts[i].lat,xj=pts[j].lng,yj=pts[j].lat;if(((yi>lat)!=(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
 
@@ -654,7 +658,9 @@ function renderMyList(){
 // My Stats
 async function renderMyStats(){
   const el=document.getElementById('pane-mystats');if(!el)return;el.innerHTML='';
-  const me=S.user.name;const mine=myLeads(me);
+  const me=S.user.name;
+  try{
+  const mine=myLeads(me);
   const sold=mine.filter(l=>l.status==='sold').length;
   const dk=mine.filter(l=>isKnocked(l.status)).length;
   const manSales=S.manualSales[me]||[];const rate=S.rate;
@@ -670,6 +676,7 @@ async function renderMyStats(){
     sec.appendChild(tot);
   } else sec.innerHTML+='<div class="empty">No deals logged yet</div>';
   el.appendChild(sec);
+  }catch(e){el.innerHTML=`<div class="empty">Error loading stats: ${e.message}</div>`;console.error('renderMyStats error:',e);}
 }
 
 async function addManualSale(){
