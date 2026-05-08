@@ -335,11 +335,12 @@ function getNavDefs(m){
     {id:'mystats',label:'My stats',icon:'📊',render:renderMyStats},
   ];
   if(m.role==='manager'||m.role==='admin'){
-    d.push({id:'saleshub',label:'SalesHub',icon:'🏢',group:true,children:[
+    const shChildren=[
       {id:'mylist',label:'Leads',icon:'📋',render:renderMyList},
       {id:'assign',label:'Territory',icon:'✏️',render:async()=>{await loadAllLeads();renderAssign();}},
-      {id:'upload',label:'Imports',icon:'📂',render:async()=>{await loadAllLeads();renderUpload();}},
-    ]});
+    ];
+    if(m.role==='admin')shChildren.push({id:'upload',label:'Imports',icon:'📂',render:async()=>{await loadAllLeads();renderUpload();}});
+    d.push({id:'saleshub',label:'SalesHub',icon:'🏢',group:true,children:shChildren});
   } else {
     d.push({id:'mylist',label:'My leads',icon:'📋',render:renderMyList});
   }
