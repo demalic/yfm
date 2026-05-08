@@ -337,7 +337,7 @@ function getNavDefs(m){
   if(m.role==='manager'||m.role==='admin'){
     d.push({id:'saleshub',label:'SalesHub',icon:'🏢',group:true,children:[
       {id:'mylist',label:'Leads',icon:'📋',render:renderMyList},
-      {id:'assign',label:'Map',icon:'✏️',render:async()=>{await loadAllLeads();renderAssign();}},
+      {id:'assign',label:'Territory',icon:'✏️',render:async()=>{await loadAllLeads();renderAssign();}},
       {id:'upload',label:'Imports',icon:'📂',render:async()=>{await loadAllLeads();renderUpload();}},
     ]});
   } else {
@@ -345,10 +345,58 @@ function getNavDefs(m){
   }
   if(m.role==='admin'){
     d.push({id:'team',label:'Team',icon:'👥',render:async()=>{await loadAllLeads();renderTeam();}});
-    d.push({id:'commission',label:'Commission',icon:'💰',render:async()=>{await loadAllLeads();renderCommission();}});
     d.push({id:'settings',label:'Settings',icon:'⚙️',render:renderSettingsPane});
   }
   return d;
+}
+
+function buildNav(m){
+  const nav=document.getElementById('sidebar-nav');
+  const tabs=document.getElementById('main-tabs');
+  const panes=document.getElementById('main-panes');
+  nav.innerHTML='';tabs.innerHTML='';panes.innerHTML='';
+  const defs=getNavDefs(m);
+  let firstId=null;
+
+  function addPane(id){const p=document.createElement('div');p.className='pane';p.id='pane-'+id;panes.appendChild(p);}
+  function activateTab(id,render){
+    document.querySelectorAll('.sidebar-item,.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('[data-tabid="'+id+'"]').forEach(x=>x.classList.add('on'));
+    const pane=document.getElementById('pane-'+id);if(pane)pane.classList.add('on');
+    render();
+  }
+
+  defs.forEach(d=>{
+    if(d.group){
+      // SIDEBAR: collapsible group header
+      const gh=document.createElement('div');gh.className='sidebar-group-header';
+      gh.innerHTML=`<span class="si">${d.icon}</span><span style="flex:1;">${d.label}</span><span id="sh-arrow-${d.id}" style="font-size:10px;transition:transform 0.2s;">▾</span>`;
+      const gc=document.createElement('div');gc.className='sidebar-group-children open';gc.id='shc-'+d.id;
+      gh.onclick=()=>{gc.classList.toggle('open');document.getElementById('sh-arrow-'+d.id).style.transform=gc.classList.contains('open')?'':'rotate(-90deg)';};
+      nav.appendChild(gh);nav.appendChild(gc);
+
+      d.children.forEach(c=>{
+        addPane(c.id);
+        // Sidebar sub-item
+        const si=document.createElement('div');si.className='sidebar-item sub';si.dataset.tabid=c.id;
+        si.innerHTML=`<span class="si">${c.icon}</span><span>${c.label}</span>`;
+        si.onclick=()=>activateTab(c.id,c.render);gc.appendChild(si);
+        // MOBILE: each child gets its own tab directly (no group label)
+        const tab=document.createElement('div');tab.className='tab';tab.dataset.tabid=c.id;
+        tab.textContent=c.label;tab.onclick=()=>activateTab(c.id,c.render);tabs.appendChild(tab);
+        if(!firstId){firstId=c.id;activateTab(c.id,c.render);}
+      });
+    } else {
+      addPane(d.id);
+      const si=document.createElement('div');si.className='sidebar-item';si.dataset.tabid=d.id;
+      si.innerHTML=`<span class="si">${d.icon}</span><span>${d.label}</span>`;
+      si.onclick=()=>activateTab(d.id,d.render);nav.appendChild(si);
+      const tab=document.createElement('div');tab.className='tab';tab.dataset.tabid=d.id;
+      tab.textContent=d.label;tab.onclick=()=>activateTab(d.id,d.render);tabs.appendChild(tab);
+      if(!firstId){firstId=d.id;activateTab(d.id,d.render);}
+    }
+  });
 }
 
 function buildNav(m){
@@ -715,6 +763,26 @@ function renderTeam(){
     membSec.appendChild(row);
   });
   sec.appendChild(addSec);sec.appendChild(membSec);el.appendChild(sec);
+  // Commission section
+  const commSec=document.createElement('div');commSec.style.marginTop='8px';
+  commSec.innerHTML='<div class="sec-title">Commission</div>';
+  const rateCard=document.createElement('div');rateCard.className='card';
+  rateCard.style.marginBottom='10px';
+  rateCard.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:13px;font-weight:600;color:var(--text);">Rate per sale</div><div style="font-size:12px;color:var(--text3);">Applied to all reps</div></div><input type="number" id="team-rate-input" value="${S.rate}" min="0" style="width:80px;text-align:right;font-size:18px;font-weight:700;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2);color:var(--green);" oninput="S.rate=parseInt(this.value)||0;localStorage.setItem('yfm_rate',S.rate);"></div>`;
+  commSec.appendChild(rateCard);
+  const totalSold=S.leads.filter(l=>l.status==='sold').length;
+  const summaryCard=document.createElement('div');summaryCard.className='card';
+  summaryCard.innerHTML=`<div class="stat-grid" style="margin-bottom:0;"><div class="stat"><div class="stat-label">Total sold</div><div class="stat-val" style="color:var(--green)">${totalSold}</div></div><div class="stat"><div class="stat-label">Total commissions</div><div class="stat-val" style="color:var(--blue);font-size:18px;">$${(totalSold*S.rate).toLocaleString()}</div></div></div>`;
+  commSec.appendChild(summaryCard);
+  const maxSold=Math.max(...S.members.filter(m=>m.role==='rep'||m.role==='manager').map(r=>S.leads.filter(l=>l.rep===r.name&&l.status==='sold').length),1);
+  S.members.filter(m=>m.role==='rep'||m.role==='manager').forEach(r=>{
+    const sold=S.leads.filter(l=>l.rep===r.name&&l.status==='sold').length;
+    const earn=sold*S.rate;const pct=Math.round(sold/maxSold*100);
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:14px;font-weight:600;color:var(--text);">${r.name}</span><span style="font-size:16px;font-weight:700;color:var(--green);">$${earn.toLocaleString()}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:4px;">${sold} sold · $${S.rate}/sale</div>`;
+    commSec.appendChild(d);
+  });
+  el.appendChild(commSec);
 }
 async function addMember(){const name=document.getElementById('new-name').value.trim();const role=document.getElementById('new-role').value;if(!name)return;try{const rows=await dbPost('members',{name,role});if(rows&&rows[0])S.members.push(rows[0]);document.getElementById('new-name').value='';renderTeam();renderLogin();toast(name+' added!');}catch(e){toast('Failed');}}
 async function removeMember(id){try{await dbDelete('members',id);S.members=S.members.filter(m=>m.id!==id);renderTeam();renderLogin();toast('Member removed');}catch(e){toast('Failed');}}
