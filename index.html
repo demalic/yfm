@@ -356,7 +356,7 @@ function buildNav(m){
   const panes=document.getElementById('main-panes');
   nav.innerHTML='';tabs.innerHTML='';panes.innerHTML='';
   const defs=getNavDefs(m);
-  let firstId=null;
+  let firstActivate=null;
 
   function addPane(id){const p=document.createElement('div');p.className='pane';p.id='pane-'+id;panes.appendChild(p);}
   function activateTab(id,render){
@@ -367,36 +367,40 @@ function buildNav(m){
     render();
   }
 
+  // Pass 1: create all panes first
+  defs.forEach(d=>{
+    if(d.group)d.children.forEach(c=>addPane(c.id));
+    else addPane(d.id);
+  });
+
+  // Pass 2: build nav and tab elements
   defs.forEach(d=>{
     if(d.group){
-      // SIDEBAR: collapsible group header
       const gh=document.createElement('div');gh.className='sidebar-group-header';
       gh.innerHTML=`<span class="si">${d.icon}</span><span style="flex:1;">${d.label}</span><span id="sh-arrow-${d.id}" style="font-size:10px;transition:transform 0.2s;">▾</span>`;
       const gc=document.createElement('div');gc.className='sidebar-group-children open';gc.id='shc-'+d.id;
       gh.onclick=()=>{gc.classList.toggle('open');document.getElementById('sh-arrow-'+d.id).style.transform=gc.classList.contains('open')?'':'rotate(-90deg)';};
       nav.appendChild(gh);nav.appendChild(gc);
-
       d.children.forEach(c=>{
-        addPane(c.id);
-        // Sidebar sub-item
         const si=document.createElement('div');si.className='sidebar-item sub';si.dataset.tabid=c.id;
         si.innerHTML=`<span class="si">${c.icon}</span><span>${c.label}</span>`;
         si.onclick=()=>activateTab(c.id,c.render);gc.appendChild(si);
-        // MOBILE: each child gets its own tab directly (no group label)
         const tab=document.createElement('div');tab.className='tab';tab.dataset.tabid=c.id;
         tab.textContent=c.label;tab.onclick=()=>activateTab(c.id,c.render);tabs.appendChild(tab);
-        if(!firstId){firstId=c.id;activateTab(c.id,c.render);}
+        if(!firstActivate)firstActivate=()=>activateTab(c.id,c.render);
       });
     } else {
-      addPane(d.id);
       const si=document.createElement('div');si.className='sidebar-item';si.dataset.tabid=d.id;
       si.innerHTML=`<span class="si">${d.icon}</span><span>${d.label}</span>`;
       si.onclick=()=>activateTab(d.id,d.render);nav.appendChild(si);
       const tab=document.createElement('div');tab.className='tab';tab.dataset.tabid=d.id;
       tab.textContent=d.label;tab.onclick=()=>activateTab(d.id,d.render);tabs.appendChild(tab);
-      if(!firstId){firstId=d.id;activateTab(d.id,d.render);}
+      if(!firstActivate)firstActivate=()=>activateTab(d.id,d.render);
     }
   });
+
+  // Activate first tab after all panes exist
+  if(firstActivate)firstActivate();
 }
 
 function buildNav(m){
