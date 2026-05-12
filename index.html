@@ -646,6 +646,8 @@ function buildClusteredMap(containerId,leads,opts={}){
     lead._marker=marker;cg.addLayer(marker);
   });
   m.addLayer(cg);
+  // Force correct size before fitting bounds — critical when container was hidden
+  m.invalidateSize({animate:false});
   const pos=leads.filter(l=>l.lat&&l.lng);
   if(pos.length)m.fitBounds(L.latLngBounds(pos.map(l=>[l.lat,l.lng])),{padding:[30,30],maxZoom:14});
   else m.setView(FORT_WAYNE,12);
@@ -659,7 +661,11 @@ let _myMapBuilt=false;
 function renderMyMap(){
   const el=document.getElementById('pane-map');if(!el)return;
   if(_myMapBuilt&&maps['my-map']){
-    setTimeout(()=>maps['my-map'].invalidateSize(),30);
+    // Pane was hidden — force Leaflet to recalculate size and reload tiles
+    requestAnimationFrame(()=>{
+      maps['my-map'].invalidateSize({animate:false});
+      setTimeout(()=>maps['my-map'].invalidateSize({animate:false}),150);
+    });
     return;
   }
   _myMapBuilt=true;
@@ -670,30 +676,36 @@ function renderMyMap(){
   tb.appendChild(db);el.appendChild(tb);
   el.appendChild(mkLegend());
   const wrap=document.createElement('div');wrap.className='map-wrap';
+  // Explicitly set height so Leaflet always has a real size to measure
+  wrap.style.height=window.innerWidth>=768?'calc(100vh - 120px)':'640px';
   const md=document.createElement('div');md.id='my-map';md.className='leaflet-map';
   wrap.appendChild(md);el.appendChild(wrap);
   const hint=document.createElement('div');hint.className='hint-bar';hint.id='my-map-hint';hint.style.display='none';
   el.appendChild(hint);
   const mine=myLeads(S.user.name);
-  buildClusteredMap('my-map',mine);
-  const ung=mine.filter(l=>!l.lat||!l.lng);
-  if(ung.length){
-    hint.style.display='';hint.textContent=`Locating ${ung.length} address${ung.length!==1?'es':''}...`;
-    (async()=>{
-      for(const lead of ung){
-        await ensureLatLng(lead);
-        if(lead.lat&&lead.lng){
-          const marker=L.marker([lead.lat,lead.lng],{icon:pinIcon(scColor(lead.status),14,STATUSES.find(s=>s.key===lead.status)?.icon||'')});
-          marker.on('click',()=>showPinDetail(lead,'my-map'));
-          lead._marker=marker;
-          if(clusters['my-map'])clusters['my-map'].addLayer(marker);
+  // Use two rAF frames to ensure the div is painted and sized before Leaflet measures it
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    buildClusteredMap('my-map',mine);
+    setTimeout(()=>maps['my-map']?.invalidateSize({animate:false}),300);
+    const ung=mine.filter(l=>!l.lat||!l.lng);
+    if(ung.length){
+      hint.style.display='';hint.textContent=`Locating ${ung.length} address${ung.length!==1?'es':''}...`;
+      (async()=>{
+        for(const lead of ung){
+          await ensureLatLng(lead);
+          if(lead.lat&&lead.lng){
+            const marker=L.marker([lead.lat,lead.lng],{icon:pinIcon(scColor(lead.status),14,STATUSES.find(s=>s.key===lead.status)?.icon||'')});
+            marker.on('click',()=>showPinDetail(lead,'my-map'));
+            lead._marker=marker;
+            if(clusters['my-map'])clusters['my-map'].addLayer(marker);
+          }
+          await new Promise(r=>setTimeout(r,350));
         }
-        await new Promise(r=>setTimeout(r,350));
-      }
-      hint.textContent='All addresses located!';
-      setTimeout(()=>{hint.style.display='none';},2000);
-    })();
-  }
+        hint.textContent='All addresses located!';
+        setTimeout(()=>{hint.style.display='none';},2000);
+      })();
+    }
+  }));
 }
 
 async function ensureLatLng(lead){
@@ -1054,17 +1066,26 @@ async function init(){
 
   await loadData();
 
-  // Restore session if still valid
+  // Restore session for ALL roles (including admin — password already entered this session)
   const savedUser=loadSession();
   if(savedUser){
     const m=S.members.find(x=>x.name===savedUser.name&&x.role===savedUser.role);
     if(m){
-      // Load cached leads first for instant map
+      saveSession(m); // refresh TTL
       const cached=getCachedLeads();
       if(cached){const ids=new Set(S.leads.map(l=>l.id));S.leads=[...S.leads,...cached.filter(l=>!ids.has(l.id))];}
       await finalizeLogin(m,!!cached);
-      // Refresh leads from Supabase in background
-      if(cached)loadMyLeads(m.name);
+      // After session restore: refresh leads from Supabase in background, then add any new pins to map
+      loadMyLeads(m.name).then(()=>{
+        const mine=myLeads(m.name);
+        if(maps['my-map']&&clusters['my-map']){
+          mine.filter(l=>l.lat&&l.lng&&!l._marker).forEach(lead=>{
+            const marker=L.marker([lead.lat,lead.lng],{icon:pinIcon(scColor(lead.status),14,STATUSES.find(s=>s.key===lead.status)?.icon||'')});
+            marker.on('click',()=>showPinDetail(lead,'my-map'));
+            lead._marker=marker;clusters['my-map'].addLayer(marker);
+          });
+        }
+      });
       return;
     }
   }
