@@ -120,11 +120,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="pw-box">
       <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;" id="pw-title">Admin login</div>
       <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Enter admin password to continue</div>
-      <input type="password" class="inp" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
+      <input type="password" class="inp" id="pw-input" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')checkPw()">
       <div style="font-size:13px;color:var(--red);min-height:18px;margin-bottom:12px;" id="pw-err"></div>
       <div style="display:flex;gap:8px;">
-        <button class="btn" style="margin:0;flex:1;" onclick="logout()">Cancel</button>
-        <button class="btn btn-primary" style="margin:0;flex:1;" onclick="checkPw()">Sign in</button>
+        <button class="btn" style="margin:0;flex:1;" onpointerup="logout()">Cancel</button>
+        <button class="btn btn-primary" style="margin:0;flex:1;" onpointerup="checkPw()">Sign in</button>
       </div>
     </div>
   </div>
@@ -343,7 +343,26 @@ async function login(name){
   if(m.role==='admin'){S.pending=m;document.getElementById('pw-title').textContent='Admin — '+name;document.getElementById('pw-input').value='';document.getElementById('pw-err').textContent='';showScreen('sc-pw');setTimeout(()=>document.getElementById('pw-input').focus(),100);}
   else finalizeLogin(m);
 }
-function checkPw(){if(document.getElementById('pw-input').value===ADMIN_PW){finalizeLogin(S.pending);S.pending=null;}else{document.getElementById('pw-err').textContent='Incorrect password.';document.getElementById('pw-input').value='';}}
+function checkPw(){
+  const val=document.getElementById('pw-input').value;
+  const errEl=document.getElementById('pw-err');
+  if(!S.pending){
+    // Pending was lost — try to recover from the title
+    const title=document.getElementById('pw-title').textContent;
+    const name=title.replace('Admin — ','').trim();
+    S.pending=S.members.find(x=>x.name===name&&x.role==='admin')||null;
+  }
+  if(!S.pending){errEl.textContent='Session lost. Please go back and try again.';return;}
+  if(val===ADMIN_PW){
+    const m=S.pending;S.pending=null;
+    document.getElementById('pw-input').value='';
+    finalizeLogin(m);
+  } else {
+    errEl.textContent='Incorrect password.';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
 async function finalizeLogin(m,skipLeadLoad=false){
   S.user=m;resetPoly();S.allLeadsLoaded=false;
   if(!skipLeadLoad)S.leads=[];
