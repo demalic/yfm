@@ -232,8 +232,8 @@ function loadStatuses(){
 }
 function saveStatuses(){
   localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));
-  // Upsert to Supabase using correct column name 'key'
-  const payload={key:'statuses',value:JSON.stringify(STATUSES)};
+  // value column is JSON type — send the array directly, not as a string
+  const payload={key:'statuses',value:STATUSES};
   fetch(`${SUPA_URL}/rest/v1/settings`,{
     method:'POST',
     headers:{
@@ -250,7 +250,8 @@ async function loadStatusesFromDB(){
   try{
     const rows=await dbGet('settings','?key=eq.statuses&limit=1');
     if(rows&&rows[0]&&rows[0].value){
-      const parsed=JSON.parse(rows[0].value);
+      // value may come back as parsed JSON array already, or as a string
+      const parsed=typeof rows[0].value==='string'?JSON.parse(rows[0].value):rows[0].value;
       if(Array.isArray(parsed)&&parsed.length){
         STATUSES=parsed;
         localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));
