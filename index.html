@@ -232,20 +232,29 @@ function loadStatuses(){
 }
 function saveStatuses(){
   localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));
-  // Sync to Supabase so all devices see the same statuses (fire and forget)
-  dbPatch('settings','statuses',{value:JSON.stringify(STATUSES)}).catch(()=>{
-    // If patch fails (row may not exist), try upsert via POST
-    dbPost('settings',{id:'statuses',value:JSON.stringify(STATUSES)}).catch(()=>{});
-  });
-  // Refresh legend everywhere
-  document.querySelectorAll('.legend-bar').forEach(l=>{l.remove();});
+  // Upsert to Supabase using correct column name 'key'
+  const payload={key:'statuses',value:JSON.stringify(STATUSES)};
+  fetch(`${SUPA_URL}/rest/v1/settings`,{
+    method:'POST',
+    headers:{
+      'apikey':SUPA_KEY,
+      'Authorization':'Bearer '+SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates,return=minimal'
+    },
+    body:JSON.stringify(payload)
+  }).catch(()=>{});
+  document.querySelectorAll('.legend-bar').forEach(l=>l.remove());
 }
 async function loadStatusesFromDB(){
   try{
     const rows=await dbGet('settings','?key=eq.statuses&limit=1');
     if(rows&&rows[0]&&rows[0].value){
       const parsed=JSON.parse(rows[0].value);
-      if(Array.isArray(parsed)&&parsed.length){STATUSES=parsed;localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));}
+      if(Array.isArray(parsed)&&parsed.length){
+        STATUSES=parsed;
+        localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));
+      }
     }
   }catch(e){/* settings table may not exist — use local */}
 }
@@ -1075,14 +1084,8 @@ function saveStatusEditIn(idx,mountId){
 }
 
 async function init(){
-  // Try to load statuses from Supabase (universal sync)
-  try{
-    const rows=await dbGet('settings','?id=eq.statuses');
-    if(rows&&rows[0]&&rows[0].value){
-      const remote=JSON.parse(rows[0].value);
-      if(Array.isArray(remote)&&remote.length){STATUSES=remote;localStorage.setItem('yfm_statuses',JSON.stringify(STATUSES));}
-    }
-  }catch(e){/* settings table may not exist yet — local fallback is fine */}
+  // Load statuses from Supabase first — universal sync across all devices
+  await loadStatusesFromDB();
 
   await loadData();
 
