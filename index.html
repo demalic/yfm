@@ -586,6 +586,9 @@ function pinIcon(color,size=14,icon=''){
 function showPinDetail(lead,containerId){
   S.selPin=lead.id;
   document.querySelectorAll('.pin-popup').forEach(p=>p.remove());
+  // Center map on the tapped pin
+  const m=maps[containerId];
+  if(m&&lead.lat&&lead.lng)m.panTo([lead.lat,lead.lng],{animate:true,duration:0.4});
   const mapWrap=document.getElementById(containerId)?.closest('.map-wrap');
   const s=STATUSES.find(st=>st.key===lead.status)||STATUSES[0];
   const popup=document.createElement('div');
@@ -601,6 +604,7 @@ function showPinDetail(lead,containerId){
     </div>
     <span class="pill" id="pp-pill" style="background:${s.color}20;color:${s.color};margin-bottom:10px;display:inline-block;">${s.icon||''} ${s.label}</span>
     <div id="pp-status"></div>
+    <div id="pp-delete-wrap" style="margin-top:10px;border-top:1px solid var(--border2);padding-top:10px;"></div>
   `;
   popup.querySelector('#pp-status').appendChild(mkStatusBtns(lead,()=>{
     if(lead._marker)lead._marker.setIcon(pinIcon(scColor(lead.status),14,STATUSES.find(s=>s.key===lead.status)?.icon||''));
@@ -609,6 +613,25 @@ function showPinDetail(lead,containerId){
     if(pill){pill.style.background=ns.color+'20';pill.style.color=ns.color;pill.textContent=(ns.icon||'')+' '+ns.label;}
     renderMyList();renderMyStats();
   }));
+  // Delete button
+  const delBtn=document.createElement('button');
+  delBtn.className='btn btn-danger btn-sm';
+  delBtn.style.cssText='width:100%;padding:7px;font-size:12px;';
+  delBtn.textContent='🗑 Delete pin';
+  delBtn.onclick=async()=>{
+    delBtn.textContent='Deleting...';delBtn.disabled=true;
+    try{
+      await dbDelete('leads',lead.id);
+      S.leads=S.leads.filter(l=>l.id!==lead.id);
+      cacheLeads(S.leads);
+      if(lead._marker&&clusters[containerId])clusters[containerId].removeLayer(lead._marker);
+      else if(lead._marker&&maps[containerId])maps[containerId].removeLayer(lead._marker);
+      popup.remove();
+      renderMyList();renderMyStats();
+      toast('Pin deleted');
+    }catch(e){delBtn.textContent='🗑 Delete pin';delBtn.disabled=false;toast('Failed to delete');}
+  };
+  popup.querySelector('#pp-delete-wrap').appendChild(delBtn);
   if(mapWrap){mapWrap.appendChild(popup);}
   else{document.querySelector('.pane.on')?.appendChild(popup);}
 }
@@ -716,6 +739,7 @@ function renderMyMap(){
   // Use two rAF frames to ensure the div is painted and sized before Leaflet measures it
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     buildClusteredMap('my-map',mine);
+    enableLongPress('my-map');
     setTimeout(()=>maps['my-map']?.invalidateSize({animate:false}),300);
     const ung=mine.filter(l=>!l.lat||!l.lng);
     if(ung.length){
@@ -763,6 +787,39 @@ async function reverseGeocodeLatLng(lat,lng){
 }
 
 let _dropMode=false;
+// Shared drop-pin handler — called from button click mode OR long-press
+async function dropPinAt(mapId, lat, lng){
+  const m=maps[mapId];if(!m)return;
+  _dropMode=false;
+  const btn=document.getElementById('drop-pin-btn');
+  if(btn){btn.classList.remove('on');btn.textContent='📍 Drop pin';}
+  m.getContainer().style.cursor='';
+  m.off('click');
+  const hint=document.getElementById('my-map-hint');
+  if(hint){hint.style.display='';hint.textContent='Getting address...';}
+  const tmp=L.marker([lat,lng],{icon:pinIcon('#2563eb',14,'📍')}).addTo(m);
+  const{addr,city}=await reverseGeocodeLatLng(lat,lng);
+  try{
+    const rows=await dbPost('leads',{addr,city,status:'new',rep:S.user.name,lat,lng,import_tag:'manual'});
+    m.removeLayer(tmp);
+    if(rows&&rows[0]){
+      const lead=rows[0];S.leads.push(lead);
+      cacheLeads(S.leads);
+      const marker=L.marker([lat,lng],{icon:pinIcon(scColor('new'),14,STATUSES.find(s=>s.key==='new')?.icon||'')});
+      marker.on('click',()=>showPinDetail(lead,mapId));
+      lead._marker=marker;
+      if(clusters[mapId])clusters[mapId].addLayer(marker);
+      m.panTo([lat,lng],{animate:true,duration:0.4});
+      if(hint){hint.textContent='Saved: '+addr;setTimeout(()=>{hint.style.display='none';},3000);}
+      toast('📍 Pin added: '+addr);
+    }
+  }catch(err){
+    m.removeLayer(tmp);
+    if(hint){hint.textContent='Failed to save pin.';setTimeout(()=>{hint.style.display='none';},3000);}
+    toast('Failed to save pin');
+  }
+}
+
 function toggleDropPin(mapId){
   const m=maps[mapId];if(!m)return;
   _dropMode=!_dropMode;
@@ -772,32 +829,52 @@ function toggleDropPin(mapId){
   if(!_dropMode){m.off('click');return;}
   m.once('click',async e=>{
     if(!_dropMode)return;
-    _dropMode=false;
-    if(btn){btn.classList.remove('on');btn.textContent='📍 Drop pin';}
-    m.getContainer().style.cursor='';
-    const{lat,lng}=e.latlng;
-    const hint=document.getElementById('my-map-hint');
-    if(hint){hint.style.display='';hint.textContent='Getting address...';}
-    const tmp=L.marker([lat,lng],{icon:pinIcon('#2563eb',14,'📍')}).addTo(m);
-    const{addr,city}=await reverseGeocodeLatLng(lat,lng);
-    try{
-      const rows=await dbPost('leads',{addr,city,status:'new',rep:S.user.name,lat,lng,import_tag:'manual'});
-      m.removeLayer(tmp);
-      if(rows&&rows[0]){
-        const lead=rows[0];S.leads.push(lead);
-        const marker=L.marker([lat,lng],{icon:pinIcon(scColor('new'),14,STATUSES.find(s=>s.key==='new')?.icon||'')});
-        marker.on('click',()=>showPinDetail(lead,mapId));
-        lead._marker=marker;
-        if(clusters[mapId])clusters[mapId].addLayer(marker);
-        if(hint){hint.textContent='Saved: '+addr;setTimeout(()=>{hint.style.display='none';},3000);}
-        toast('Pin added: '+addr);
-      }
-    }catch(err){
-      m.removeLayer(tmp);
-      if(hint){hint.textContent='Failed to save pin.';setTimeout(()=>{hint.style.display='none';},3000);}
-      toast('Failed to save pin');
-    }
+    await dropPinAt(mapId,e.latlng.lat,e.latlng.lng);
   });
+}
+
+// Long-press to drop pin — works on any map
+function enableLongPress(mapId){
+  const m=maps[mapId];if(!m)return;
+  const container=m.getContainer();
+  let holdTimer=null;
+  let holdRipple=null;
+  const HOLD_MS=600;
+
+  function cancelHold(){
+    clearTimeout(holdTimer);holdTimer=null;
+    if(holdRipple){holdRipple.remove();holdRipple=null;}
+  }
+
+  function startHold(e){
+    if(_dropMode)return; // already in drop mode
+    cancelHold();
+    // Get map coordinates from the touch/mouse point
+    const src=e.touches?e.touches[0]:e;
+    const rect=container.getBoundingClientRect();
+    const point=L.point(src.clientX-rect.left,src.clientY-rect.top);
+    const latlng=m.containerPointToLatLng(point);
+
+    // Show ripple feedback at touch point
+    holdRipple=document.createElement('div');
+    holdRipple.style.cssText=`position:fixed;left:${src.clientX-22}px;top:${src.clientY-22}px;width:44px;height:44px;border-radius:50%;background:rgba(37,99,235,0.25);border:2px solid #2563eb;pointer-events:none;z-index:9999;transform:scale(0);transition:transform ${HOLD_MS}ms ease-out;`;
+    document.body.appendChild(holdRipple);
+    requestAnimationFrame(()=>{holdRipple&&(holdRipple.style.transform='scale(1)');});
+
+    holdTimer=setTimeout(async()=>{
+      cancelHold();
+      // Haptic feedback if available
+      if(navigator.vibrate)navigator.vibrate(40);
+      await dropPinAt(mapId,latlng.lat,latlng.lng);
+    },HOLD_MS);
+  }
+
+  container.addEventListener('touchstart',startHold,{passive:true});
+  container.addEventListener('touchend',cancelHold,{passive:true});
+  container.addEventListener('touchmove',cancelHold,{passive:true});
+  container.addEventListener('mousedown',startHold);
+  container.addEventListener('mouseup',cancelHold);
+  container.addEventListener('mousemove',cancelHold);
 }
 
 // My List
