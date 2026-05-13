@@ -602,7 +602,7 @@ function showPinDetail(lead,containerId){
   document.querySelectorAll('.pin-popup').forEach(p=>p.remove());
   // Center map on the tapped pin
   const m=maps[containerId];
-  if(m&&lead.lat&&lead.lng)m.panTo([lead.lat,lead.lng],{animate:true,duration:0.4});
+  if(m&&lead.lat&&lead.lng)m.flyTo([lead.lat,lead.lng],18,{animate:true,duration:0.5});
   const mapWrap=document.getElementById(containerId)?.closest('.map-wrap');
   const s=STATUSES.find(st=>st.key===lead.status)||STATUSES[0];
   const popup=document.createElement('div');
@@ -909,6 +909,8 @@ function toggleDropPin(mapId){
 function enableLongPress(mapId){
   const m=maps[mapId];if(!m)return;
   const container=m.getContainer();
+  container.style.userSelect='none';
+  container.style.webkitUserSelect='none';
   let holdTimer=null;
   let holdRipple=null;
   const HOLD_MS=600;
@@ -1222,7 +1224,11 @@ async function deleteOrphanedLeads(btn){
   if(!confirm('Delete all leads whose import has been deleted? Manual pins are kept.'))return;
   btn.textContent='Loading...';btn.disabled=true;
   try{
-    if(!S.allLeadsLoaded){await loadAllLeads();}
+    // Force fresh full reload from Supabase — bypass cache and allLeadsLoaded flag
+    S.allLeadsLoaded=false;
+    await loadAllLeads();
+    // Also refresh imports list to make sure validTags is current
+    try{const imp=await dbGet('imports','?order=created_at.desc');S.imports=imp||[];}catch(e){}
     const validTags=new Set(S.imports.map(i=>i.import_tag));validTags.add('manual');
     const orphans=S.leads.filter(l=>!validTags.has(l.import_tag));
     if(!orphans.length){btn.textContent='🗑 Delete orphaned leads';btn.disabled=false;toast('No orphaned leads found!');return;}
