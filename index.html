@@ -54,7 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tool-bar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;}
 .tool-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;font-weight:600;}.tool-btn.on{background:var(--blue);color:#fff;border-color:var(--blue);}
 .assign-panel{background:var(--blue-bg);border-radius:10px;border:1px solid var(--blue-border);padding:12px;margin-bottom:10px;display:none;}.assign-panel.show{display:block;}
-.upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:var(--bg2);margin-bottom:10px;}.upload-area:hover{background:var(--bg3);}
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;background:var(--bg2);margin-bottom:10px;transition:background 0.15s,border-color 0.15s;}.upload-area:hover{background:var(--bg3);}.upload-area.drag-over{background:var(--blue-bg);border-color:var(--blue);}
 .pw-bg{background:rgba(0,0,0,0.5);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
 .pw-box{background:var(--bg2);border-radius:16px;padding:24px;width:100%;max-width:320px;}
 .login-wrap{padding:40px 20px;max-width:400px;margin:0 auto;}
@@ -191,6 +191,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="setting-row"><div><div class="setting-label">🔴 Admin</div><div class="setting-sub">Full access: upload, manage team, assign territory, edit settings</div></div></div>
       <div class="setting-row"><div><div class="setting-label">🔵 Manager</div><div class="setting-sub">Can assign territory to reps</div></div></div>
       <div class="setting-row" style="border:none;"><div><div class="setting-label">🟢 Rep</div><div class="setting-sub">Views assigned leads, updates status, logs deals</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Import status modal -->
+<div class="modal-bg" id="import-modal" style="display:none;" onclick="if(event.target===this)cancelImport()">
+  <div class="modal-box">
+    <div class="modal-title">Import leads as</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:12px;" id="import-modal-info"></div>
+    <select class="sel" id="import-status-modal"></select>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Existing customers in the CSV are always auto-tagged regardless of this setting.</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" style="margin:0;flex:1;" onclick="cancelImport()">Cancel</button>
+      <button class="btn btn-primary" style="margin:0;flex:1;" onclick="confirmImport()">Import</button>
     </div>
   </div>
 </div>
@@ -1090,14 +1104,23 @@ async function removeMember(id){try{await dbDelete('members',id);S.members=S.mem
 // Upload
 function renderUpload(){
   const el=document.getElementById('pane-upload');if(!el)return;el.innerHTML='';
-  const statusOpts=STATUSES.map(s=>`<option value="${s.key}">${s.icon||''} ${s.label}</option>`).join('');
   el.innerHTML=`<div class="sec-title">Upload leads</div>
-<div style="margin-bottom:10px;">
-  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Import leads as</div>
-  <select class="sel" id="import-status-sel" style="margin-bottom:0;">${statusOpts}</select>
+<div class="upload-area" id="upload-drop-zone" onclick="document.getElementById('csv-file').click()">
+  <div style="font-size:28px;margin-bottom:6px;">📂</div>
+  <div style="font-size:14px;font-weight:600;color:var(--text2);">Tap to upload or drag & drop a CSV</div>
+  <div style="font-size:12px;color:var(--text4);margin-top:4px;">Supports street/city/state/zip + Geocodio latitude/longitude</div>
 </div>
-<div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2);">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:var(--text4);margin-top:4px;">Supports street/city/state/zip + Geocodio latitude/longitude</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:10px;"></div>`;
-  const exp=document.createElement('button');exp.className='btn btn-success';exp.style.marginBottom='16px';exp.textContent='Export all leads as CSV';exp.onclick=exportCSV;el.appendChild(exp);
+<input type="file" id="csv-file" accept=".csv" style="display:none" onchange="onCSVPicked(event)">
+<div id="csv-status" style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:10px;"></div>`;
+  // Wire drag-and-drop
+  const zone=document.getElementById('upload-drop-zone');
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.name.endsWith('.csv'))openImportModal(f);else toast('Please drop a CSV file');});
+  const exp=document.createElement('button');exp.className='btn btn-success';exp.style.marginBottom='8px';exp.textContent='Export all leads as CSV';exp.onclick=exportCSV;el.appendChild(exp);
+  // Remove duplicates button
+  const dedupBtn=document.createElement('button');dedupBtn.className='btn btn-danger';dedupBtn.style.marginBottom='16px';dedupBtn.textContent='🧹 Remove duplicate leads';
+  dedupBtn.onclick=()=>removeDuplicateLeads(dedupBtn);el.appendChild(dedupBtn);
   const impSec=document.createElement('div');impSec.innerHTML=`<div class="sec-title">Imports (${S.imports.length})</div>`;
   if(!S.imports.length)impSec.innerHTML+='<div class="empty">No imports yet</div>';
   else S.imports.forEach(imp=>{
@@ -1110,9 +1133,27 @@ function renderUpload(){
 }
 async function deleteImport(importId,importTag,btn){if(!confirm('Delete all leads from this import?'))return;btn.textContent='Deleting...';btn.disabled=true;try{await api('DELETE','leads',null,`?import_tag=eq.${importTag}`);await dbDelete('imports',importId);S.leads=S.leads.filter(l=>l.import_tag!==importTag);S.imports=S.imports.filter(i=>i.id!==importId);renderUpload();toast('Import deleted');}catch(e){toast('Failed');btn.textContent='Delete';btn.disabled=false;}}
 function exportCSV(){const rows=[['Address','City','Status','Rep']];S.leads.forEach(l=>rows.push([l.addr,l.city||'',l.status,l.rep||'']));const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='yfm_leads.csv';a.click();}
-async function handleCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const importStatus=document.getElementById('import-status-sel')?.value||'new';
+
+// Import modal flow
+let _pendingImportFile=null;
+function onCSVPicked(e){const f=e.target.files[0];if(f)openImportModal(f);e.target.value='';}
+function openImportModal(file){
+  _pendingImportFile=file;
+  const modal=document.getElementById('import-modal');
+  const sel=document.getElementById('import-status-modal');
+  sel.innerHTML=STATUSES.map(s=>`<option value="${s.key}">${s.icon||''} ${s.label}</option>`).join('');
+  document.getElementById('import-modal-info').textContent=`File: ${file.name}`;
+  modal.style.display='flex';
+}
+function cancelImport(){document.getElementById('import-modal').style.display='none';_pendingImportFile=null;}
+function confirmImport(){
+  const importStatus=document.getElementById('import-status-modal').value||'new';
+  document.getElementById('import-modal').style.display='none';
+  if(_pendingImportFile)processCSV(_pendingImportFile,importStatus);
+  _pendingImportFile=null;
+}
+
+async function processCSV(file,importStatus){
   const status=document.getElementById('csv-status');status.textContent='Processing...';
   const reader=new FileReader();
   reader.onload=async ev=>{
@@ -1125,22 +1166,59 @@ async function handleCSV(e){
     const lati=h.findIndex(x=>x==='geocodio latitude'||x==='latitude');
     const lngi=h.findIndex(x=>x==='geocodio longitude'||x==='longitude');
     const resi=h.findIndex(x=>x==='result');const techi=h.findIndex(x=>x==='techavailable');
-    const importTag='imp_'+Date.now();const batch=[];let existingCount=0,copperCount=0;
+    const importTag='imp_'+Date.now();const batch=[];let existingCount=0,copperCount=0,dupCount=0;
+    // Build dedup set from current leads — addr+city (lowercase)
+    const existingKeys=new Set(S.leads.map(l=>(l.addr||'').toLowerCase().trim()+'|'+(l.city||'').toLowerCase().trim()));
     for(let i=1;i<lines.length;i++){
       const c=parseCSVLine(lines[i]).map(x=>x.replace(/^"|"$/g,''));if(!c[si])continue;
       const tech=techi>=0?(c[techi]||'').toUpperCase():'';if(tech==='COPPER'){copperCount++;continue;}
       const lat=lati>=0&&c[lati]?parseFloat(c[lati]):null;const lng=lngi>=0&&c[lngi]?parseFloat(c[lngi]):null;
       const result=resi>=0?(c[resi]||'').toUpperCase():'';
       const isExisting=result.includes('EXISTING')||result.includes('INCUMBENT');if(isExisting)existingCount++;
-      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':importStatus,rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
+      const addr=c[si];const city=[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', ');
+      const key=addr.toLowerCase().trim()+'|'+city.toLowerCase().trim();
+      if(existingKeys.has(key)){dupCount++;continue;}
+      existingKeys.add(key);
+      batch.push({addr,city,status:isExisting?'existing':importStatus,rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
     }
-    status.textContent=`Uploading ${batch.length} leads${copperCount?` (${copperCount} copper skipped)`:''}...`;
+    status.textContent=`Uploading ${batch.length} leads...`;
     let added=0;
     for(let i=0;i<batch.length;i+=50){try{const rows=await dbPost('leads',batch.slice(i,i+50));if(rows){S.leads.push(...rows);added+=rows.length;}}catch(err){console.error(err);}}
     try{const impRows=await dbPost('imports',{file_name:file.name,lead_count:added,existing_count:existingCount,import_tag:importTag});if(impRows&&impRows[0])S.imports.unshift(impRows[0]);}catch(err){console.error(err);}
-    status.textContent=`${added} leads uploaded${existingCount?' · '+existingCount+' existing auto-tagged':''}${copperCount?' · '+copperCount+' copper skipped':''}`;
+    const parts=[`${added} leads uploaded`];
+    if(existingCount)parts.push(`${existingCount} existing auto-tagged`);
+    if(copperCount)parts.push(`${copperCount} copper skipped`);
+    if(dupCount)parts.push(`${dupCount} duplicates skipped`);
+    status.textContent=parts.join(' · ');
     renderUpload();toast(`${added} leads uploaded!`);
   };reader.readAsText(file);
+}
+
+// Remove duplicate leads from DB — keeps first occurrence of each addr+city
+async function removeDuplicateLeads(btn){
+  if(!confirm('Scan all leads and delete duplicates? This cannot be undone.'))return;
+  btn.textContent='Scanning...';btn.disabled=true;
+  // Must have all leads loaded
+  if(!S.allLeadsLoaded){
+    const status=document.getElementById('csv-status');if(status)status.textContent='Loading all leads first...';
+    await loadAllLeads();
+  }
+  const seen=new Map();const toDelete=[];
+  S.leads.forEach(l=>{
+    const key=(l.addr||'').toLowerCase().trim()+'|'+(l.city||'').toLowerCase().trim();
+    if(seen.has(key)){toDelete.push(l.id);}
+    else seen.set(key,l.id);
+  });
+  if(!toDelete.length){btn.textContent='🧹 Remove duplicate leads';btn.disabled=false;toast('No duplicates found!');return;}
+  btn.textContent=`Deleting ${toDelete.length} duplicates...`;
+  let deleted=0;
+  for(const id of toDelete){
+    try{await dbDelete('leads',id);S.leads=S.leads.filter(l=>l.id!==id);deleted++;}catch(e){console.error('Failed to delete',id,e);}
+  }
+  cacheLeads(S.leads);
+  btn.textContent='🧹 Remove duplicate leads';btn.disabled=false;
+  toast(`Removed ${deleted} duplicate lead${deleted!==1?'s':''}!`);
+  renderUpload();
 }
 
 // Commission
