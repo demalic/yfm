@@ -1321,6 +1321,7 @@ function renderStatusEditorIn(mountId){
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;" id="sicons-${mountId}-${idx}"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary btn-sm" onclick="saveStatusEditIn(${idx},'${mountId}')" style="flex:1;">Save</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteStatusIn(${idx},'${mountId}')" style="flex:1;">Delete</button>
         <button class="btn btn-sm" onclick="toggleStatusEdit(${idx},'${mountId}')" style="flex:1;">Cancel</button>
       </div>`;
     mount.appendChild(row);mount.appendChild(ep);
@@ -1331,6 +1332,13 @@ function renderStatusEditorIn(mountId){
       if(iw)STATUS_ICONS.forEach(ic=>{const opt=document.createElement('div');opt.className='icon-opt'+(s.icon===ic?' on':'');opt.textContent=ic;opt.dataset.icon=ic;opt.onclick=()=>{iw.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('on'));opt.classList.add('on');};iw.appendChild(opt);});
     },20);
   });
+  // Add new status button
+  const addBtn=document.createElement('button');
+  addBtn.className='btn btn-primary';
+  addBtn.style.cssText='margin-top:10px;';
+  addBtn.textContent='+ Add status';
+  addBtn.onclick=()=>addNewStatus(mountId);
+  mount.appendChild(addBtn);
 }
 
 function toggleStatusEdit(idx,mountId){
@@ -1350,6 +1358,26 @@ function saveStatusEditIn(idx,mountId){
   if(color)STATUSES[idx].color=color;
   if(icon)STATUSES[idx].icon=icon;
   saveStatuses();renderStatusEditorIn(mid);toast('Status updated!');
+}
+
+function addNewStatus(mountId){
+  const key='status_'+Date.now();
+  STATUSES.push({key,label:'New Status',color:STATUS_COLORS[0],icon:'📍'});
+  saveStatuses();
+  renderStatusEditorIn(mountId);
+  // Auto-open the edit panel for the new status
+  const newIdx=STATUSES.length-1;
+  setTimeout(()=>toggleStatusEdit(newIdx,mountId),30);
+  toast('New status added — edit it below');
+}
+
+function deleteStatusIn(idx,mountId){
+  if(STATUSES.length<=1){toast('Must have at least one status');return;}
+  if(!confirm(`Delete "${STATUSES[idx].label}"? Leads with this status won't be affected.`))return;
+  STATUSES.splice(idx,1);
+  saveStatuses();
+  renderStatusEditorIn(mountId);
+  toast('Status deleted');
 }
 
 async function init(){
