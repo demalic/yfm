@@ -1112,15 +1112,15 @@ function renderUpload(){
 </div>
 <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="onCSVPicked(event)">
 <div id="csv-status" style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:10px;"></div>`;
-  // Wire drag-and-drop
   const zone=document.getElementById('upload-drop-zone');
   zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
   zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.name.endsWith('.csv'))openImportModal(f);else toast('Please drop a CSV file');});
   const exp=document.createElement('button');exp.className='btn btn-success';exp.style.marginBottom='8px';exp.textContent='Export all leads as CSV';exp.onclick=exportCSV;el.appendChild(exp);
-  // Remove duplicates button
-  const dedupBtn=document.createElement('button');dedupBtn.className='btn btn-danger';dedupBtn.style.marginBottom='16px';dedupBtn.textContent='🧹 Remove duplicate leads';
+  const dedupBtn=document.createElement('button');dedupBtn.className='btn btn-danger';dedupBtn.style.marginBottom='8px';dedupBtn.textContent='🧹 Remove duplicate leads';
   dedupBtn.onclick=()=>removeDuplicateLeads(dedupBtn);el.appendChild(dedupBtn);
+  const orphanBtn=document.createElement('button');orphanBtn.className='btn btn-danger';orphanBtn.style.marginBottom='16px';orphanBtn.textContent='🗑 Delete orphaned leads';
+  orphanBtn.onclick=()=>deleteOrphanedLeads(orphanBtn);el.appendChild(orphanBtn);
   const impSec=document.createElement('div');impSec.innerHTML=`<div class="sec-title">Imports (${S.imports.length})</div>`;
   if(!S.imports.length)impSec.innerHTML+='<div class="empty">No imports yet</div>';
   else S.imports.forEach(imp=>{
@@ -1131,7 +1131,22 @@ function renderUpload(){
   });
   el.appendChild(impSec);
 }
-async function deleteImport(importId,importTag,btn){if(!confirm('Delete all leads from this import?'))return;btn.textContent='Deleting...';btn.disabled=true;try{await api('DELETE','leads',null,`?import_tag=eq.${importTag}`);await dbDelete('imports',importId);S.leads=S.leads.filter(l=>l.import_tag!==importTag);S.imports=S.imports.filter(i=>i.id!==importId);renderUpload();toast('Import deleted');}catch(e){toast('Failed');btn.textContent='Delete';btn.disabled=false;}}
+async function dbDeleteWhere(table,query){
+  const url=`${SUPA_URL}/rest/v1/${table}${query}`;
+  const r=await fetch(url,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'}});
+  if(!r.ok){const t=await r.text();throw new Error(t);}
+}
+async function deleteImport(importId,importTag,btn){
+  if(!confirm('Delete all leads from this import?'))return;
+  btn.textContent='Deleting...';btn.disabled=true;
+  try{
+    await dbDeleteWhere('leads',`?import_tag=eq.${encodeURIComponent(importTag)}`);
+    await dbDeleteWhere('imports',`?id=eq.${importId}`);
+    S.leads=S.leads.filter(l=>l.import_tag!==importTag);
+    S.imports=S.imports.filter(i=>i.id!==importId);
+    renderUpload();toast('Import deleted');
+  }catch(e){console.error(e);toast('Failed: '+e.message);btn.textContent='Delete';btn.disabled=false;}
+}
 function exportCSV(){const rows=[['Address','City','Status','Rep']];S.leads.forEach(l=>rows.push([l.addr,l.city||'',l.status,l.rep||'']));const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='yfm_leads.csv';a.click();}
 
 // Import modal flow
@@ -1139,11 +1154,10 @@ let _pendingImportFile=null;
 function onCSVPicked(e){const f=e.target.files[0];if(f)openImportModal(f);e.target.value='';}
 function openImportModal(file){
   _pendingImportFile=file;
-  const modal=document.getElementById('import-modal');
   const sel=document.getElementById('import-status-modal');
   sel.innerHTML=STATUSES.map(s=>`<option value="${s.key}">${s.icon||''} ${s.label}</option>`).join('');
   document.getElementById('import-modal-info').textContent=`File: ${file.name}`;
-  modal.style.display='flex';
+  document.getElementById('import-modal').style.display='flex';
 }
 function cancelImport(){document.getElementById('import-modal').style.display='none';_pendingImportFile=null;}
 function confirmImport(){
@@ -1152,7 +1166,6 @@ function confirmImport(){
   if(_pendingImportFile)processCSV(_pendingImportFile,importStatus);
   _pendingImportFile=null;
 }
-
 async function processCSV(file,importStatus){
   const status=document.getElementById('csv-status');status.textContent='Processing...';
   const reader=new FileReader();
@@ -1167,7 +1180,6 @@ async function processCSV(file,importStatus){
     const lngi=h.findIndex(x=>x==='geocodio longitude'||x==='longitude');
     const resi=h.findIndex(x=>x==='result');const techi=h.findIndex(x=>x==='techavailable');
     const importTag='imp_'+Date.now();const batch=[];let existingCount=0,copperCount=0,dupCount=0;
-    // Build dedup set from current leads — addr+city (lowercase)
     const existingKeys=new Set(S.leads.map(l=>(l.addr||'').toLowerCase().trim()+'|'+(l.city||'').toLowerCase().trim()));
     for(let i=1;i<lines.length;i++){
       const c=parseCSVLine(lines[i]).map(x=>x.replace(/^"|"$/g,''));if(!c[si])continue;
@@ -1193,32 +1205,36 @@ async function processCSV(file,importStatus){
     renderUpload();toast(`${added} leads uploaded!`);
   };reader.readAsText(file);
 }
-
-// Remove duplicate leads from DB — keeps first occurrence of each addr+city
 async function removeDuplicateLeads(btn){
   if(!confirm('Scan all leads and delete duplicates? This cannot be undone.'))return;
   btn.textContent='Scanning...';btn.disabled=true;
-  // Must have all leads loaded
-  if(!S.allLeadsLoaded){
-    const status=document.getElementById('csv-status');if(status)status.textContent='Loading all leads first...';
-    await loadAllLeads();
-  }
+  if(!S.allLeadsLoaded){const s=document.getElementById('csv-status');if(s)s.textContent='Loading all leads...';await loadAllLeads();}
   const seen=new Map();const toDelete=[];
-  S.leads.forEach(l=>{
-    const key=(l.addr||'').toLowerCase().trim()+'|'+(l.city||'').toLowerCase().trim();
-    if(seen.has(key)){toDelete.push(l.id);}
-    else seen.set(key,l.id);
-  });
+  S.leads.forEach(l=>{const key=(l.addr||'').toLowerCase().trim()+'|'+(l.city||'').toLowerCase().trim();if(seen.has(key)){toDelete.push(l.id);}else seen.set(key,l.id);});
   if(!toDelete.length){btn.textContent='🧹 Remove duplicate leads';btn.disabled=false;toast('No duplicates found!');return;}
-  btn.textContent=`Deleting ${toDelete.length} duplicates...`;
+  btn.textContent=`Deleting ${toDelete.length}...`;
   let deleted=0;
-  for(const id of toDelete){
-    try{await dbDelete('leads',id);S.leads=S.leads.filter(l=>l.id!==id);deleted++;}catch(e){console.error('Failed to delete',id,e);}
-  }
-  cacheLeads(S.leads);
-  btn.textContent='🧹 Remove duplicate leads';btn.disabled=false;
-  toast(`Removed ${deleted} duplicate lead${deleted!==1?'s':''}!`);
-  renderUpload();
+  for(const id of toDelete){try{await dbDelete('leads',id);S.leads=S.leads.filter(l=>l.id!==id);deleted++;}catch(e){console.error(e);}}
+  cacheLeads(S.leads);btn.textContent='🧹 Remove duplicate leads';btn.disabled=false;
+  toast(`Removed ${deleted} duplicate${deleted!==1?'s':''}!`);renderUpload();
+}
+async function deleteOrphanedLeads(btn){
+  if(!confirm('Delete all leads whose import has been deleted? Manual pins are kept.'))return;
+  btn.textContent='Loading...';btn.disabled=true;
+  try{
+    if(!S.allLeadsLoaded){await loadAllLeads();}
+    const validTags=new Set(S.imports.map(i=>i.import_tag));validTags.add('manual');
+    const orphans=S.leads.filter(l=>!validTags.has(l.import_tag));
+    if(!orphans.length){btn.textContent='🗑 Delete orphaned leads';btn.disabled=false;toast('No orphaned leads found!');return;}
+    btn.textContent=`Deleting ${orphans.length}...`;
+    const byTag={};orphans.forEach(l=>{if(!byTag[l.import_tag])byTag[l.import_tag]=[];byTag[l.import_tag].push(l.id);});
+    let deleted=0;
+    for(const tag of Object.keys(byTag)){
+      try{await dbDeleteWhere('leads',`?import_tag=eq.${encodeURIComponent(tag)}`);deleted+=byTag[tag].length;S.leads=S.leads.filter(l=>l.import_tag!==tag);}catch(e){console.error(e);}
+    }
+    cacheLeads(S.leads);btn.textContent='🗑 Delete orphaned leads';btn.disabled=false;
+    toast(`Deleted ${deleted} orphaned lead${deleted!==1?'s':''}!`);renderUpload();
+  }catch(e){console.error(e);toast('Failed: '+e.message);btn.textContent='🗑 Delete orphaned leads';btn.disabled=false;}
 }
 
 // Commission
