@@ -1227,10 +1227,36 @@ async function deleteOrphanedLeads(btn){
     const orphans=S.leads.filter(l=>!validTags.has(l.import_tag));
     if(!orphans.length){btn.textContent='🗑 Delete orphaned leads';btn.disabled=false;toast('No orphaned leads found!');return;}
     btn.textContent=`Deleting ${orphans.length}...`;
-    const byTag={};orphans.forEach(l=>{if(!byTag[l.import_tag])byTag[l.import_tag]=[];byTag[l.import_tag].push(l.id);});
+    // Separate null-tag leads from string-tag leads — Supabase needs different query syntax
+    const nullOrphans=orphans.filter(l=>l.import_tag===null||l.import_tag===undefined||l.import_tag==='');
+    const taggedOrphans=orphans.filter(l=>l.import_tag&&l.import_tag!=='null');
+    // Group tagged orphans by tag
+    const byTag={};taggedOrphans.forEach(l=>{if(!byTag[l.import_tag])byTag[l.import_tag]=[];byTag[l.import_tag].push(l.id);});
     let deleted=0;
+    // Delete by each real import_tag
     for(const tag of Object.keys(byTag)){
-      try{await dbDeleteWhere('leads',`?import_tag=eq.${encodeURIComponent(tag)}`);deleted+=byTag[tag].length;S.leads=S.leads.filter(l=>l.import_tag!==tag);}catch(e){console.error(e);}
+      try{
+        await dbDeleteWhere('leads',`?import_tag=eq.${encodeURIComponent(tag)}`);
+        deleted+=byTag[tag].length;
+        S.leads=S.leads.filter(l=>l.import_tag!==tag);
+      }catch(e){console.error('tag delete failed:',tag,e);}
+    }
+    // Delete null import_tag leads
+    if(nullOrphans.length){
+      try{
+        await dbDeleteWhere('leads','?import_tag=is.null');
+        deleted+=nullOrphans.length;
+        S.leads=S.leads.filter(l=>l.import_tag!==null&&l.import_tag!==undefined&&l.import_tag!=='');
+      }catch(e){console.error('null tag delete failed:',e);}
+    }
+    // Also catch leads where import_tag is literally the string "null"
+    const stringNullOrphans=orphans.filter(l=>l.import_tag==='null');
+    if(stringNullOrphans.length){
+      try{
+        await dbDeleteWhere('leads','?import_tag=eq.null');
+        deleted+=stringNullOrphans.length;
+        S.leads=S.leads.filter(l=>l.import_tag!=='null');
+      }catch(e){console.error('string-null tag delete failed:',e);}
     }
     cacheLeads(S.leads);btn.textContent='🗑 Delete orphaned leads';btn.disabled=false;
     toast(`Deleted ${deleted} orphaned lead${deleted!==1?'s':''}!`);renderUpload();
