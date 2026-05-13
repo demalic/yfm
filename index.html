@@ -388,7 +388,7 @@ async function finalizeLogin(m,skipLeadLoad=false){
 }
 function logout(){
   S.user=null;S.pending=null;S.leads=[];S.allLeadsLoaded=false;resetPoly();
-  clearSession();_myMapBuilt=false;_dropMode=false;
+  clearSession();_myMapBuilt=false;_dropMode=false;_mapFilterActive=new Set([]);
   Object.values(maps).forEach(m=>{try{m.remove();}catch(e){}});maps={};clusters={};
   showScreen('sc-login');renderLogin();
 }
@@ -726,7 +726,15 @@ function renderMyMap(){
   const tb=document.createElement('div');tb.className='tool-bar';
   const db=document.createElement('button');db.className='tool-btn';db.id='drop-pin-btn';db.textContent='📍 Drop pin';
   db.onclick=()=>toggleDropPin('my-map');
-  tb.appendChild(db);el.appendChild(tb);
+  // Funnel filter button
+  const fb=document.createElement('button');fb.className='tool-btn';fb.id='filter-btn';fb.innerHTML='⊿ Filter';fb.style.marginLeft='auto';
+  fb.onclick=()=>toggleMapFilter('my-map');
+  tb.appendChild(db);tb.appendChild(fb);el.appendChild(tb);
+  // Filter panel (hidden by default)
+  const fp=document.createElement('div');fp.id='map-filter-panel';
+  fp.style.cssText='display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;';
+  fp.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Show statuses</div><div id="map-filter-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>';
+  el.appendChild(fp);
   el.appendChild(mkLegend());
   const wrap=document.createElement('div');wrap.className='map-wrap';
   // Explicitly set height so Leaflet always has a real size to measure
@@ -818,6 +826,56 @@ async function dropPinAt(mapId, lat, lng){
     if(hint){hint.textContent='Failed to save pin.';setTimeout(()=>{hint.style.display='none';},3000);}
     toast('Failed to save pin');
   }
+}
+
+// Map status filter
+let _mapFilterActive=new Set([]); // empty = all shown
+function toggleMapFilter(mapId){
+  const panel=document.getElementById('map-filter-panel');if(!panel)return;
+  const open=panel.style.display!=='none';
+  if(open){panel.style.display='none';return;}
+  // Build chips
+  const chipWrap=document.getElementById('map-filter-chips');chipWrap.innerHTML='';
+  // If _mapFilterActive is empty treat as "all on"
+  const allOn=_mapFilterActive.size===0;
+  STATUSES.forEach(s=>{
+    const chip=document.createElement('button');
+    const isOn=allOn||_mapFilterActive.has(s.key);
+    chip.style.cssText=`padding:5px 10px;border-radius:20px;border:2px solid ${s.color};font-size:11px;font-weight:600;cursor:pointer;transition:background 0.1s,color 0.1s;background:${isOn?s.color:'transparent'};color:${isOn?'#fff':s.color};`;
+    chip.textContent=(s.icon||'')+' '+s.label;
+    chip.dataset.key=s.key;
+    chip.dataset.on=isOn?'1':'0';
+    chip.onclick=()=>{
+      const nowOn=chip.dataset.on==='1';
+      chip.dataset.on=nowOn?'0':'1';
+      chip.style.background=nowOn?'transparent':s.color;
+      chip.style.color=nowOn?s.color:'#fff';
+      applyMapFilter(mapId);
+    };
+    chipWrap.appendChild(chip);
+  });
+  panel.style.display='block';
+}
+
+function applyMapFilter(mapId){
+  const chipWrap=document.getElementById('map-filter-chips');if(!chipWrap)return;
+  const onKeys=new Set([...chipWrap.querySelectorAll('[data-on="1"]')].map(c=>c.dataset.key));
+  _mapFilterActive=onKeys;
+  // Show/hide markers
+  const mine=myLeads(S.user?.name||'');
+  mine.forEach(lead=>{
+    if(!lead._marker)return;
+    const visible=onKeys.size===0||onKeys.has(lead.status);
+    if(visible){
+      if(!clusters[mapId]?.hasLayer(lead._marker))clusters[mapId]?.addLayer(lead._marker);
+    } else {
+      if(clusters[mapId]?.hasLayer(lead._marker))clusters[mapId]?.removeLayer(lead._marker);
+    }
+  });
+  // Update funnel button to show active state
+  const allShown=onKeys.size===0||onKeys.size===STATUSES.length;
+  const fb=document.getElementById('filter-btn');
+  if(fb){fb.classList.toggle('on',!allShown);fb.innerHTML=allShown?'⊿ Filter':`⊿ Filter (${onKeys.size})`;}
 }
 
 function toggleDropPin(mapId){
@@ -1032,7 +1090,13 @@ async function removeMember(id){try{await dbDelete('members',id);S.members=S.mem
 // Upload
 function renderUpload(){
   const el=document.getElementById('pane-upload');if(!el)return;el.innerHTML='';
-  el.innerHTML=`<div class="sec-title">Upload leads</div><div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2);">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:var(--text4);margin-top:4px;">Supports street/city/state/zip + Geocodio latitude/longitude</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:10px;"></div>`;
+  const statusOpts=STATUSES.map(s=>`<option value="${s.key}">${s.icon||''} ${s.label}</option>`).join('');
+  el.innerHTML=`<div class="sec-title">Upload leads</div>
+<div style="margin-bottom:10px;">
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Import leads as</div>
+  <select class="sel" id="import-status-sel" style="margin-bottom:0;">${statusOpts}</select>
+</div>
+<div class="upload-area" onclick="document.getElementById('csv-file').click()"><div style="font-size:28px;margin-bottom:6px;">📂</div><div style="font-size:14px;font-weight:600;color:var(--text2);">Tap to upload Frontier results CSV</div><div style="font-size:12px;color:var(--text4);margin-top:4px;">Supports street/city/state/zip + Geocodio latitude/longitude</div></div><input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)"><div id="csv-status" style="font-size:13px;color:var(--text3);text-align:center;margin-bottom:10px;"></div>`;
   const exp=document.createElement('button');exp.className='btn btn-success';exp.style.marginBottom='16px';exp.textContent='Export all leads as CSV';exp.onclick=exportCSV;el.appendChild(exp);
   const impSec=document.createElement('div');impSec.innerHTML=`<div class="sec-title">Imports (${S.imports.length})</div>`;
   if(!S.imports.length)impSec.innerHTML+='<div class="empty">No imports yet</div>';
@@ -1048,6 +1112,7 @@ async function deleteImport(importId,importTag,btn){if(!confirm('Delete all lead
 function exportCSV(){const rows=[['Address','City','Status','Rep']];S.leads.forEach(l=>rows.push([l.addr,l.city||'',l.status,l.rep||'']));const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='yfm_leads.csv';a.click();}
 async function handleCSV(e){
   const file=e.target.files[0];if(!file)return;
+  const importStatus=document.getElementById('import-status-sel')?.value||'new';
   const status=document.getElementById('csv-status');status.textContent='Processing...';
   const reader=new FileReader();
   reader.onload=async ev=>{
@@ -1067,7 +1132,7 @@ async function handleCSV(e){
       const lat=lati>=0&&c[lati]?parseFloat(c[lati]):null;const lng=lngi>=0&&c[lngi]?parseFloat(c[lngi]):null;
       const result=resi>=0?(c[resi]||'').toUpperCase():'';
       const isExisting=result.includes('EXISTING')||result.includes('INCUMBENT');if(isExisting)existingCount++;
-      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':'new',rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
+      batch.push({addr:c[si],city:[c[ci]||'',c[sti]||'',c[zi]||''].filter(Boolean).join(', '),status:isExisting?'existing':importStatus,rep:S.user.name,lat:lat||null,lng:lng||null,import_tag:importTag});
     }
     status.textContent=`Uploading ${batch.length} leads${copperCount?` (${copperCount} copper skipped)`:''}...`;
     let added=0;
